@@ -146,6 +146,24 @@ class Color():
         self._rgb = RGBColor(*convert.hsl2rgb(*hsl))
 
     @property
+    def luminance(self):
+        rgb = self.rgb
+        rgb_lum = tuple(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb)
+        return 0.2126 * rgb_lum[0] + 0.7152 * rgb_lum[1] + 0.0722 * rgb_lum[2]
+
+    def contrast_ratio(self, other):
+        """WCAG relative contrast ratio
+
+        contrast_ratio > 4.5:1 - AA
+        contrast_ratio > 7:1 - AAA
+        """
+        l1, l2 = self.luminance, other.luminance
+        if l2 > l1:
+            l1, l2 = l2, l1
+
+        return (l1 + 0.05) / (l2 + 0.05)
+
+    @property
     def lhex(self):
         return convert.rgb2hex(*self.rgb, True)
 
