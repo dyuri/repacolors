@@ -5,18 +5,16 @@ http://easyrgb.com/en/math.php
 
 import colorsys
 
-FLOAT_ERROR = 0.00005
-
 ANSI16 = [
     (0, 0, 0),
-    (.5, 0, 0),
-    (0, .5, 0),
-    (.5, .5, 0),
-    (0, 0, .5),
-    (.5, 0, .5),
-    (0, .5, .5),
-    (.75, .75, .75),
-    (.5, .5, .5),
+    (0.5, 0, 0),
+    (0, 0.5, 0),
+    (0.5, 0.5, 0),
+    (0, 0, 0.5),
+    (0.5, 0, 0.5),
+    (0, 0.5, 0.5),
+    (0.75, 0.75, 0.75),
+    (0.5, 0.5, 0.5),
     (1, 0, 0),
     (0, 1, 0),
     (1, 1, 0),
@@ -41,7 +39,7 @@ def distance(c1, c2):
     For Lab colors: diff ~ 2.3 - just noticeable difference
     """
 
-    return ((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2 + (c1[2] - c2[2])**2) ** .5
+    return ((c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2 + (c1[2] - c2[2]) ** 2) ** 0.5
 
 
 def ansi2rgb(ansicolor):
@@ -53,7 +51,7 @@ def ansi2rgb(ansicolor):
         i = ansicolor - 16
         ar = i // 36
         ag = (i - ar * 36) // 6
-        ab = (i - ar * 36 - ag * 6)
+        ab = i - ar * 36 - ag * 6
         return tuple((55 + 40 * x) / 255 if x > 0 else 0 for x in (ar, ag, ab))
     elif ansicolor < 256:
         # grayscale
@@ -82,29 +80,30 @@ def rgb2ansi(r, g, b):
                 res.append(closest)
                 break
 
-    ansicol = 16 + sum(x[1] * 6**(2 - x[0]) for x in enumerate(res))
+    ansicol = 16 + sum(x[1] * 6 ** (2 - x[0]) for x in enumerate(res))
 
     # check grayscale
-    if abs(coli[0] - coli[1]) < 10 and \
-       abs(coli[1] - coli[2]) < 10 and \
-       abs(coli[0] - coli[2]) < 10:
+    if (
+        abs(coli[0] - coli[1]) < 10
+        and abs(coli[1] - coli[2]) < 10
+        and abs(coli[0] - coli[2]) < 10
+    ):
         avg = sum(coli) / 3
         for i in range(24):
             c = (256 / 32 * (i + 1)) + i * 2
             if abs(c - avg) <= 5:
                 ansigray = 232 + i
-                if rgbdistance(coli, res) > rgbdistance(coli, (c, c, c)):
+                if distance(coli, res) > distance(coli, (c, c, c)):
                     ansicol = ansigray
 
     return ansicol
 
 
 def rgb2hex(r, g, b, force_long=False):
-    hx = ''.join(["%02x" % int(c * 255 + 0.5)
-                  for c in (r, g, b)])
+    hx = "".join(["%02x" % int(c * 255 + 0.5) for c in (r, g, b)])
 
     if not force_long and hx[0::2] == hx[1::2]:
-        hx = ''.join(hx[0::2])
+        hx = "".join(hx[0::2])
 
     return "#%s" % hx
 
@@ -126,16 +125,16 @@ def hex2rgb(hexcolor):
 
 
 def rgb2yuv(r, g, b):  # 0..1 range
-    y = .299 * r + .587 * g + .114 * b
-    u = .5 - .168736 * r - .331364 * g + .5 * b
-    v = .5 + .5 * r - .418688 * g - .081312 * b
+    y = 0.299 * r + 0.587 * g + 0.114 * b
+    u = 0.5 - 0.168736 * r - 0.331364 * g + 0.5 * b
+    v = 0.5 + 0.5 * r - 0.418688 * g - 0.081312 * b
     return y, u, v
 
 
 def yuv2rgb(y, u, v):
-    r = y + 1.402 * (v - .5)
-    g = y - .34414 * (u - .5) - .71414 * (v - .5)
-    b = y + 1.772 * (u - .5)
+    r = y + 1.402 * (v - 0.5)
+    g = y - 0.34414 * (u - 0.5) - 0.71414 * (v - 0.5)
+    b = y + 1.772 * (u - 0.5)
     return r, g, b
 
 
@@ -150,7 +149,9 @@ def hsl2rgb(h, s, l):
 
 
 def rgb2xyz(r, g, b):
-    vr, vg, vb = tuple(((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92 for c in (r, g, b))
+    vr, vg, vb = tuple(
+        ((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92 for c in (r, g, b)
+    )
 
     x = 100 * (0.4124 * vr + 0.3576 * vg + 0.1805 * vb)
     y = 100 * (0.2126 * vr + 0.7152 * vg + 0.0722 * vb)
@@ -167,9 +168,7 @@ def xyz2rgb(x, y, z):
     vb = x * 0.0557 + y * -0.2040 + z * 1.0570
 
     r, g, b = tuple(
-        1.055 * c ** (1 / 2.4) - 0.055 
-        if c > 0.0031308 
-        else 12.92 * c 
+        1.055 * c ** (1 / 2.4) - 0.055 if c > 0.0031308 else 12.92 * c
         for c in (vr, vg, vb)
     )
 
@@ -182,10 +181,7 @@ def xyz2lab(x, y, z, whitepoint=D65):
     z = z / whitepoint[2]
 
     vx, vy, vz = tuple(
-        c ** (1 / 3)
-        if c > 0.008856
-        else 7.787 * c + 16 / 116
-        for c in (x, y, z)
+        c ** (1 / 3) if c > 0.008856 else 7.787 * c + 16 / 116 for c in (x, y, z)
     )
 
     return 116 * vy - 16, 500 * (vx - vy), 200 * (vy - vz)
@@ -197,10 +193,7 @@ def lab2xyz(l, a, b, whitepoint=D65):
     vz = vy - b / 200
 
     x, y, z = tuple(
-        c ** 3
-        if c > 0.206893
-        else (c - 16 / 116) / 7.787
-        for c in (vx, vy, vz)
+        c ** 3 if c > 0.206893 else (c - 16 / 116) / 7.787 for c in (vx, vy, vz)
     )
 
     return x * whitepoint[0], y * whitepoint[1], z * whitepoint[2]

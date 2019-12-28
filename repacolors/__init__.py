@@ -4,8 +4,8 @@ from collections import namedtuple
 import subprocess
 
 
-HSLColor = namedtuple('HSLColor', ('hue', 'saturation', 'lightness'))
-RGBColor = namedtuple('RGBColor', ('red', 'green', 'blue'))
+HSLColor = namedtuple("HSLColor", ("hue", "saturation", "lightness"))
+RGBColor = namedtuple("RGBColor", ("red", "green", "blue"))
 
 
 def equal_hex(c1, c2):
@@ -20,9 +20,13 @@ def equal_hsla(c1, c2):
     return c1.csshsla == c2.csshsla
 
 
+def equal_hash(c1, c2):
+    return hash(c1) == hash(c2)
+
+
 def cmul(t, n):
     if not isinstance(t, tuple):
-        raise TypeError('Tuple/namedtuple required.')
+        raise TypeError("Tuple/namedtuple required.")
 
     cls = t.__class__
 
@@ -30,7 +34,7 @@ def cmul(t, n):
 
 
 # TODO not the best name, gradient is different
-def gradient(frm, to, steps=10, prop='hsl'):
+def gradient(frm, to, steps=10, prop="hsl"):
     if steps < 1:
         raise ValueError(f"Gradient steps should be more than 1 ({steps})")
 
@@ -41,9 +45,8 @@ def gradient(frm, to, steps=10, prop='hsl'):
     return (frm + cmul(deltac, i) for i in range(steps + 1))
 
 
-class ColorProperty():
-
-    def __init__(self, name='hue', mainprop='_hsl'):
+class ColorProperty:
+    def __init__(self, name="hue", mainprop="_hsl"):
         self.name = name
         self.mainprop = mainprop
 
@@ -61,7 +64,7 @@ class ColorProperty():
 
 
 # TODO - make it immutable - modifications should return a new color
-class Color():
+class Color:
     """Color object
 
     Can be initialized with many kind of color definitions, and output different
@@ -70,12 +73,12 @@ class Color():
     Internal representation is HSL.
     """
 
-    red = ColorProperty('red', 'rgb')
-    green = ColorProperty('green', 'rgb')
-    blue = ColorProperty('blue', 'rgb')
-    hue = ColorProperty('hue', 'hsl')
-    saturation = ColorProperty('saturation', 'hsl')
-    lightness = ColorProperty('lightness', 'hsl')
+    red = ColorProperty("red", "rgb")
+    green = ColorProperty("green", "rgb")
+    blue = ColorProperty("blue", "rgb")
+    hue = ColorProperty("hue", "hsl")
+    saturation = ColorProperty("saturation", "hsl")
+    lightness = ColorProperty("lightness", "hsl")
 
     def __init__(self, colordef=None, equality=equal_hex, **kwargs):
         self._hsl = HSLColor(0, 0, 0)
@@ -98,9 +101,7 @@ class Color():
 
         # from rgb tuple
         elif isinstance(colordef, tuple):
-            if colordef[0] > 1 or \
-               colordef[1] > 1 or \
-               colordef[2] > 1:
+            if colordef[0] > 1 or colordef[1] > 1 or colordef[2] > 1:
                 self.rgb = tuple(c / 255 for c in colordef)
             else:
                 self.rgb = colordef
@@ -116,29 +117,43 @@ class Color():
 
         elif isinstance(colordef, str):
             # from hex color
-            if colordef.startswith('#'):
+            if colordef.startswith("#"):
                 self.rgb = convert.hex2rgb(colordef)
-            elif colordef.startswith('rgb'):
+            elif colordef.startswith("rgb"):
                 pass  # TODO rgb + rgba CSS
-            elif colordef.startswith('hsl'):
+            elif colordef.startswith("hsl"):
                 pass  # TODO hsl + hsla CSS
             else:
-                pass  # TODO named colors
+                pass  # TODO named colors with colorize fallback
 
         for k, v in kwargs.items():
             setattr(self, k, v)
 
     @classmethod
-    def pick(cls, picker='xcolor'):
+    def pick(cls, picker="xcolor"):
         proc = subprocess.Popen(picker, stdout=subprocess.PIPE)
         res = proc.communicate()[0].strip().decode()
         return cls(res)
 
     @classmethod
     def colorize(cls, obj):
-        pass  # TODO pick "unique" color for hashable object
+        if isinstance(obj, Color) or \
+           isinstance(obj, RGBColor) or \
+           isinstance(obj, HSLColor):
+            return Color(obj)
 
-    def gradient(self, to, steps=10, prop='hsl'):
+        try:
+            hsh = hash(obj)
+        except TypeError:
+            hsh = hash(str(obj))
+
+        r = hsh % 1e3
+        g = int(hsh / 1e3) % 1e3
+        b = int(hsh / 1e6) % 1e3
+
+        return Color(RGBColor(r / 999, g / 999, b / 999))
+
+    def gradient(self, to, steps=10, prop="hsl"):
         return gradient(self, to, steps, prop)
 
     def closest_named(self, num=3):
@@ -183,7 +198,9 @@ class Color():
     @property
     def luminance(self):
         rgb = self.rgb
-        rgb_lum = tuple(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb)
+        rgb_lum = tuple(
+            c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb
+        )
         return 0.2126 * rgb_lum[0] + 0.7152 * rgb_lum[1] + 0.0722 * rgb_lum[2]
 
     def contrast_ratio(self, other):
@@ -237,20 +254,20 @@ class Color():
     @property
     def cssrgb(self):
         rgb256 = self.rgb256
-        return f'rgb({rgb256.red}, {rgb256.green}, {rgb256.blue})'
+        return f"rgb({rgb256.red}, {rgb256.green}, {rgb256.blue})"
 
     @property
     def cssrgba(self):
         rgb256 = self.rgb256
-        return f'rgb({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})'
+        return f"rgb({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})"
 
     @property
     def csshsl(self):
-        return f'hsl({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%)'
+        return f"hsl({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%)"
 
     @property
     def csshsla(self):
-        return f'hsla({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%, {self.alpha:.5g})'
+        return f"hsla({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%, {self.alpha:.5g})"
 
     @property
     def alpha(self):
@@ -260,7 +277,7 @@ class Color():
         return self.hex
 
     def __repr__(self):
-        return f'<Color {self.csshsla}>'
+        return f"<Color {self.csshsla}>"
 
     def __eq__(self, other):
         if isinstance(other, Color):
@@ -270,10 +287,14 @@ class Color():
     def __add__(self, other):
         if isinstance(other, Color):
             hsl = tuple(p[0] + p[1] for p in zip(self.hsl, other.hsl))
-            return Color(hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1)))
+            return Color(
+                hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1))
+            )
         elif isinstance(other, HSLColor):
             hsl = tuple(p[0] + p[1] for p in zip(self.hsl, other))
-            return Color(hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1)))
+            return Color(
+                hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1))
+            )
         elif isinstance(other, RGBColor):
             rgb = tuple(min(p[0] + p[1], 1) for p in zip(self.rgb, other))
             return Color(rgb=rgb)
@@ -286,7 +307,9 @@ class Color():
             raise TypeError(f"Cannot substract '{type(other)}' from 'Color'")
 
         hsl = tuple(p[0] - p[1] for p in zip(self.hsl, other.hsl))
-        return Color(hsl=(1 if hsl[0] == 1 else hsl[0] % 1, max(hsl[1], 0), max(hsl[2], 0)))
+        return Color(
+            hsl=(1 if hsl[0] == 1 else hsl[0] % 1, max(hsl[1], 0), max(hsl[2], 0))
+        )
 
     def __mul__(self, n):
         if not isinstance(n, int) or isinstance(n, float):
@@ -295,11 +318,22 @@ class Color():
             raise TypeError("Cannot multiply 'Color' with negative values")
 
         hsl = tuple(p * n for p in self.hsl)
-        return Color(hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1)))
+        return Color(
+            hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1))
+        )
 
     def __rmul__(self, n):
         return self * n
 
+    def __hash__(self):
+        hsl = self.hsl
+        return int(
+            int(hsl.hue * 3.6e3) * 1e9
+            + int(hsl.saturation * 1e3) * 1e6
+            + int(hsl.lightness * 1e3) * 1e3
+            + int(self.alpha * 1e3)
+        )
+
     def _ansibg(self):
         rgb = self.rgb256
-        return f"\x1b[48;2;{rgb.red};{rgb.green};{rgb.blue}m   \x1b[0m"
+        return f"\x1b[48;2;{rgb.red};{rgb.green};{rgb.blue}m  \x1b[0m"
