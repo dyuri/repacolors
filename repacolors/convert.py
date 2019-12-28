@@ -1,5 +1,11 @@
+"""Conversion between different color spaces
+
+http://easyrgb.com/en/math.php
+"""
+
 import colorsys
-import math
+
+FLOAT_ERROR = 0.00005
 
 ANSI16 = [
     (0, 0, 0),
@@ -20,9 +26,22 @@ ANSI16 = [
     (1, 1, 1),
 ]
 
+# whitepoints
+D50 = (96.422, 100.000, 82.521)
+D55 = (95.682, 100.000, 92.149)
+D65 = (95.047, 100.000, 108.883)
+D75 = (94.972, 100.000, 122.638)
 
-def rgbdistance(c1, c2):
-    return math.sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2 + (c1[2] - c2[2])**2)
+
+def distance(c1, c2):
+    """Color distance
+    Can be used with RGB or CIE-Lab values (CIE76 later case)
+    https://en.wikipedia.org/wiki/Color_difference#CIELAB_%CE%94E*
+
+    For Lab colors: diff ~ 2.3 - just noticeable difference
+    """
+
+    return ((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2 + (c1[2] - c2[2])**2) ** .5
 
 
 def ansi2rgb(ansicolor):
@@ -127,6 +146,92 @@ def rgb2hsl(r, g, b):
 
 def hsl2rgb(h, s, l):
     r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return r, g, b
+
+
+def rgb2xyz(r, g, b):
+    vr, vg, vb = tuple(((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92 for c in (r, g, b))
+
+    x = 100 * (0.4124 * vr + 0.3576 * vg + 0.1805 * vb)
+    y = 100 * (0.2126 * vr + 0.7152 * vg + 0.0722 * vb)
+    z = 100 * (0.0193 * vr + 0.1192 * vg + 0.9505 * vb)
+
+    return x, y, z
+
+
+def xyz2rgb(x, y, z):
+    x, y, z = x / 100, y / 100, z / 100
+
+    vr = x * 3.2406 + y * -1.5372 + z * -0.4986
+    vg = x * -0.9689 + y * 1.8758 + z * 0.0415
+    vb = x * 0.0557 + y * -0.2040 + z * 1.0570
+
+    r, g, b = tuple(
+        1.055 * c ** (1 / 2.4) - 0.055 
+        if c > 0.0031308 
+        else 12.92 * c 
+        for c in (vr, vg, vb)
+    )
+
+    return r, g, b
+
+
+def xyz2lab(x, y, z, whitepoint=D65):
+    x = x / whitepoint[0]
+    y = y / whitepoint[1]
+    z = z / whitepoint[2]
+
+    vx, vy, vz = tuple(
+        c ** (1 / 3)
+        if c > 0.008856
+        else 7.787 * c + 16 / 116
+        for c in (x, y, z)
+    )
+
+    return 116 * vy - 16, 500 * (vx - vy), 200 * (vy - vz)
+
+
+def lab2xyz(l, a, b, whitepoint=D65):
+    vy = (l + 16) / 116
+    vx = a / 500 + vy
+    vz = vy - b / 200
+
+    x, y, z = tuple(
+        c ** 3
+        if c > 0.206893
+        else (c - 16 / 116) / 7.787
+        for c in (vx, vy, vz)
+    )
+
+    return x * whitepoint[0], y * whitepoint[1], z * whitepoint[2]
+
+
+def rgb2lab(r, g, b, whitepoint=D65):
+    return xyz2lab(*rgb2xyz(r, g, b), whitepoint)
+
+
+def lab2rgb(l, a, b, whitepoint=D65):
+    return xyz2rgb(*lab2xyz(l, a, b, whitepoint))
+
+
+def rgb2cmyk(r, g, b):
+    vc, vm, vy = tuple(1 - v for v in (r, g, b))
+    k = 1
+    for v in (vc, vm, vy):
+        if v < k:
+            k = v
+
+    if k == 1:
+        c, m, y = 0, 0, 0
+    else:
+        c, m, y = tuple((v - k) / (1 - k) for v in (vc, vm, vy))
+
+    return c, m, y, k
+
+
+def cmyk2rgb(c, m, y, k):
+    r, g, b = tuple(1 - (v * (1 - k) + k) for v in (c, m, y))
+
     return r, g, b
 
 

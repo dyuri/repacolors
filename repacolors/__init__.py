@@ -3,7 +3,7 @@ from . import convert
 from collections import namedtuple
 
 
-HUEColor = namedtuple('HUEColor', ('hue', 'saturation', 'lightness'))
+HSLColor = namedtuple('HSLColor', ('hue', 'saturation', 'lightness'))
 RGBColor = namedtuple('RGBColor', ('red', 'green', 'blue'))
 
 
@@ -17,6 +17,27 @@ def equal_hsl(c1, c2):
 
 def equal_hsla(c1, c2):
     return c1.csshsla == c2.csshsla
+
+
+def cmul(t, n):
+    if not isinstance(t, tuple):
+        raise TypeError('Tuple/namedtuple required.')
+
+    cls = t.__class__
+
+    return cls(*tuple(v * n for v in t))
+
+
+# TODO not the best name, gradient is different
+def gradient(frm, to, steps=10, prop='hsl'):
+    if steps < 1:
+        raise ValueError(f"Gradient steps should be more than 1 ({steps})")
+
+    p1, p2 = getattr(frm, prop), getattr(to, prop)
+    cls = p1.__class__
+    deltac = cls(*tuple((p[1] - p[0]) / steps for p in zip(p1, p2)))
+
+    return (frm + cmul(deltac, i) for i in range(steps + 1))
 
 
 class ColorProperty():
@@ -38,6 +59,7 @@ class ColorProperty():
         setattr(obj, self.mainprop, proptype(*proplist))
 
 
+# TODO - make it immutable - modifications should return a new color
 class Color():
     """Color object
 
@@ -55,7 +77,7 @@ class Color():
     lightness = ColorProperty('lightness', 'hsl')
 
     def __init__(self, colordef=None, equality=equal_hex, **kwargs):
-        self._hsl = HUEColor(0, 0, 0)
+        self._hsl = HSLColor(0, 0, 0)
         self._rgb = RGBColor(0, 0, 0)
         self._alpha = 1  # TODO alpha support
 
@@ -69,8 +91,8 @@ class Color():
         elif isinstance(colordef, RGBColor):
             self.rgb = colordef
 
-        # from HUEColor
-        elif isinstance(colordef, HUEColor):
+        # from HSLColor
+        elif isinstance(colordef, HSLColor):
             self.hue = colordef
 
         # from rgb tuple
@@ -109,11 +131,17 @@ class Color():
     def colorize(cls, obj):
         pass  # TODO pick "unique" color for hashable object
 
-    def gradient(self, to, steps, prop='hsl'):
-        pass  # TODO return an iterator with the gradient color steps
+    def gradient(self, to, steps=10, prop='hsl'):
+        return gradient(self, to, steps, prop)
 
     def closest_named(self, num=3):
         pass  # TODO return closest named colors
+
+    def distance(self, other):
+        return convert.distance(self.lab, other.lab)
+
+    def similar(self, other):
+        return self.distance(other) < 2.3
 
     @property
     def name(self):
@@ -128,9 +156,9 @@ class Color():
     def rgb(self, rgb):
         self._rgb = RGBColor(*rgb)
         hue = self.hue
-        self._hsl = HUEColor(*convert.rgb2hsl(*rgb))
+        self._hsl = HSLColor(*convert.rgb2hsl(*rgb))
         if self._hsl.saturation == 0:
-            self._hsl = HUEColor(hue, self._hsl.saturation, self._hsl.lightness)
+            self._hsl = HSLColor(hue, self._hsl.saturation, self._hsl.lightness)
 
     @property
     def rgb256(self):
@@ -142,7 +170,7 @@ class Color():
 
     @hsl.setter
     def hsl(self, hsl):
-        self._hsl = HUEColor(*hsl)
+        self._hsl = HSLColor(*hsl)
         self._rgb = RGBColor(*convert.hsl2rgb(*hsl))
 
     @property
@@ -188,6 +216,18 @@ class Color():
         return convert.rgb2yiq(*self.rgb)
 
     @property
+    def lab(self):
+        return convert.rgb2lab(*self.rgb)
+
+    @property
+    def xyz(self):
+        return convert.rgb2xyz(*self.rgb)
+
+    @property
+    def cmyk(self):
+        return convert.rgb2cmyk(*self.rgb)
+
+    @property
     def cssrgb(self):
         rgb256 = self.rgb256
         return f'rgb({rgb256.red}, {rgb256.green}, {rgb256.blue})'
@@ -219,3 +259,40 @@ class Color():
         if isinstance(other, Color):
             return self._eq(self, other)
         return NotImplemented
+
+    def __add__(self, other):
+        if isinstance(other, Color):
+            hsl = tuple(p[0] + p[1] for p in zip(self.hsl, other.hsl))
+            return Color(hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1)))
+        elif isinstance(other, HSLColor):
+            hsl = tuple(p[0] + p[1] for p in zip(self.hsl, other))
+            return Color(hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1)))
+        elif isinstance(other, RGBColor):
+            rgb = tuple(min(p[0] + p[1], 1) for p in zip(self.rgb, other))
+            return Color(rgb=rgb)
+
+        raise TypeError(f"Cannot add '{type(other)}' to 'Color'")
+
+    def __sub__(self, other):
+        # TODO see __add__
+        if not isinstance(other, Color):
+            raise TypeError(f"Cannot substract '{type(other)}' from 'Color'")
+
+        hsl = tuple(p[0] - p[1] for p in zip(self.hsl, other.hsl))
+        return Color(hsl=(1 if hsl[0] == 1 else hsl[0] % 1, max(hsl[1], 0), max(hsl[2], 0)))
+
+    def __mul__(self, n):
+        if not isinstance(n, int) or isinstance(n, float):
+            raise TypeError(f"Cannot multiply 'Color' with '{type(n)}'")
+        if n < 0:
+            raise TypeError("Cannot multiply 'Color' with negative values")
+
+        hsl = tuple(p * n for p in self.hsl)
+        return Color(hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1)))
+
+    def __rmul__(self, n):
+        return self * n
+
+    def _ansibg(self):
+        rgb = self.rgb256
+        return f"\x1b[48;2;{rgb.red};{rgb.green};{rgb.blue}m   \x1b[0m"
