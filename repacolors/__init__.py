@@ -1,6 +1,7 @@
 from . import colors
 from . import convert
 from collections import namedtuple
+import subprocess
 
 
 HSLColor = namedtuple('HSLColor', ('hue', 'saturation', 'lightness'))
@@ -126,6 +127,12 @@ class Color():
 
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+    @classmethod
+    def pick(cls, picker='xcolor'):
+        proc = subprocess.Popen(picker, stdout=subprocess.PIPE)
+        res = proc.communicate()[0].strip().decode()
+        return cls(res)
 
     @classmethod
     def colorize(cls, obj):
