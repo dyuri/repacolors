@@ -4,8 +4,8 @@ from collections import namedtuple
 import subprocess
 
 
-HSLColor = namedtuple("HSLColor", ("hue", "saturation", "lightness"))
-RGBColor = namedtuple("RGBColor", ("red", "green", "blue"))
+HSLTuple = namedtuple("HSLTuple", ("hue", "saturation", "lightness"))
+RGBTuple = namedtuple("RGBTuple", ("red", "green", "blue"))
 
 
 def equal_hex(c1, c2):
@@ -63,7 +63,8 @@ class ColorProperty:
         setattr(obj, self.mainprop, proptype(*proplist))
 
 
-# TODO - make it immutable - modifications should return a new color
+# TODO - make it ~immutable - modifications should return a new color
+# TODO - other input formats
 class Color:
     """Color object
 
@@ -81,9 +82,10 @@ class Color:
     lightness = ColorProperty("lightness", "hsl")
 
     def __init__(self, colordef=None, equality=equal_hex, **kwargs):
-        self._hsl = HSLColor(0, 0, 0)
-        self._rgb = RGBColor(0, 0, 0)
+        self._hsl = HSLTuple(0, 0, 0)
+        self._rgb = RGBTuple(0, 0, 0)
         self._alpha = 1  # TODO alpha support
+        self._name = None
 
         self._eq = equality
 
@@ -91,12 +93,12 @@ class Color:
         if isinstance(colordef, Color):
             self.hue = colordef.hue
 
-        # from RGBColor
-        elif isinstance(colordef, RGBColor):
+        # from RGBTuple
+        elif isinstance(colordef, RGBTuple):
             self.rgb = colordef
 
-        # from HSLColor
-        elif isinstance(colordef, HSLColor):
+        # from HSLTuple
+        elif isinstance(colordef, HSLTuple):
             self.hue = colordef
 
         # from rgb tuple
@@ -124,7 +126,13 @@ class Color:
             elif colordef.startswith("hsl"):
                 pass  # TODO hsl + hsla CSS
             else:
-                pass  # TODO named colors with colorize fallback
+                hx = colors.name2hex(colordef)
+                if hx:
+                    self.rgb = convert.hex2rgb(hx)
+                    self._name = colordef
+                else:
+                    colorized = Color.colorize(colordef)
+                    self.hsl = colorized.hsl
 
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -138,8 +146,8 @@ class Color:
     @classmethod
     def colorize(cls, obj):
         if isinstance(obj, Color) or \
-           isinstance(obj, RGBColor) or \
-           isinstance(obj, HSLColor):
+           isinstance(obj, RGBTuple) or \
+           isinstance(obj, HSLTuple):
             return Color(obj)
 
         try:
@@ -151,7 +159,7 @@ class Color:
         g = int(hsh / 1e3) % 1e3
         b = int(hsh / 1e6) % 1e3
 
-        return Color(RGBColor(r / 999, g / 999, b / 999))
+        return Color(RGBTuple(r / 999, g / 999, b / 999))
 
     def gradient(self, to, steps=10, prop="hsl"):
         return gradient(self, to, steps, prop)
@@ -167,8 +175,9 @@ class Color:
 
     @property
     def name(self):
-        # TODO return color name for exact match
-        return self.hex
+        if not self._name:
+            self._name = colors.hex2name(self.lhex) or self.hex
+        return self._name
 
     @property
     def rgb(self):
@@ -176,15 +185,15 @@ class Color:
 
     @rgb.setter
     def rgb(self, rgb):
-        self._rgb = RGBColor(*rgb)
+        self._rgb = RGBTuple(*rgb)
         hue = self.hue
-        self._hsl = HSLColor(*convert.rgb2hsl(*rgb))
+        self._hsl = HSLTuple(*convert.rgb2hsl(*rgb))
         if self._hsl.saturation == 0:
-            self._hsl = HSLColor(hue, self._hsl.saturation, self._hsl.lightness)
+            self._hsl = HSLTuple(hue, self._hsl.saturation, self._hsl.lightness)
 
     @property
     def rgb256(self):
-        return RGBColor(*tuple(round(255 * c + 0.0001) for c in self._rgb))
+        return RGBTuple(*tuple(round(255 * c + 0.0001) for c in self._rgb))
 
     @property
     def hsl(self):
@@ -192,8 +201,8 @@ class Color:
 
     @hsl.setter
     def hsl(self, hsl):
-        self._hsl = HSLColor(*hsl)
-        self._rgb = RGBColor(*convert.hsl2rgb(*hsl))
+        self._hsl = HSLTuple(*hsl)
+        self._rgb = RGBTuple(*convert.hsl2rgb(*hsl))
 
     @property
     def luminance(self):
@@ -224,7 +233,7 @@ class Color:
         return convert.rgb2hex(*self.rgb, False)
 
     @property
-    def ansi(self):
+    def ansi256(self):
         return convert.rgb2ansi(*self.rgb)
 
     @property
@@ -277,7 +286,7 @@ class Color:
         return self.hex
 
     def __repr__(self):
-        return f"<Color {self.csshsla}>"
+        return f"<Color {self.name} - {self.csshsla}>"
 
     def __eq__(self, other):
         if isinstance(other, Color):
@@ -290,12 +299,12 @@ class Color:
             return Color(
                 hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1))
             )
-        elif isinstance(other, HSLColor):
+        elif isinstance(other, HSLTuple):
             hsl = tuple(p[0] + p[1] for p in zip(self.hsl, other))
             return Color(
                 hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1))
             )
-        elif isinstance(other, RGBColor):
+        elif isinstance(other, RGBTuple):
             rgb = tuple(min(p[0] + p[1], 1) for p in zip(self.rgb, other))
             return Color(rgb=rgb)
 
@@ -334,6 +343,16 @@ class Color:
             + int(self.alpha * 1e3)
         )
 
-    def _ansibg(self):
+    @property
+    def _bg(self):
         rgb = self.rgb256
-        return f"\x1b[48;2;{rgb.red};{rgb.green};{rgb.blue}m  \x1b[0m"
+        return f"\x1b[48;2;{rgb.red};{rgb.green};{rgb.blue}m"
+
+    @property
+    def _fg(self):
+        rgb = self.rgb256
+        return f"\x1b[38;2;{rgb.red};{rgb.green};{rgb.blue}m"
+
+    @property
+    def _treset(self):
+        return "\x1b[0m"
