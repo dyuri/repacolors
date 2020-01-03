@@ -144,7 +144,7 @@ def rgb2ansi(color: CTuple) -> int:
 
 def rgb2hex(color: CTuple, force_long: bool = False) -> str:
     r, g, b = color
-    hx = "".join(["%02x" % int(c * 255 + 0.5) for c in (r, g, b)])
+    hx = "".join(["%02x" % int((c + .0025) * 255) for c in (r, g, b)])
 
     if not force_long and hx[0::2] == hx[1::2]:
         hx = "".join(hx[0::2])
@@ -200,15 +200,15 @@ def rgb2xyz(color: RGBTuple) -> XYZTuple:
         ((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92 for c in color
     )
 
-    x = 100 * (0.4124 * vr + 0.3576 * vg + 0.1805 * vb)
-    y = 100 * (0.2126 * vr + 0.7152 * vg + 0.0722 * vb)
-    z = 100 * (0.0193 * vr + 0.1192 * vg + 0.9505 * vb)
+    x = 0.4124 * vr + 0.3576 * vg + 0.1805 * vb
+    y = 0.2126 * vr + 0.7152 * vg + 0.0722 * vb
+    z = 0.0193 * vr + 0.1192 * vg + 0.9505 * vb
 
     return XYZTuple(x, y, z)
 
 
 def xyz2rgb(color: XYZTuple) -> RGBTuple:
-    x, y, z = tuple(c / 100 for c in color)
+    x, y, z = color
 
     vr = x * 3.2406 + y * -1.5372 + z * -0.4986
     vg = x * -0.9689 + y * 1.8758 + z * 0.0415
@@ -223,7 +223,7 @@ def xyz2rgb(color: XYZTuple) -> RGBTuple:
 
 
 def xyz2lab(color: XYZTuple, whitepoint: CTuple = D65) -> LabTuple:
-    x, y, z = tuple(c[0] / c[1] for c in zip(color, whitepoint))
+    x, y, z = tuple(100 * c[0] / c[1] for c in zip(color, whitepoint))
 
     vx, vy, vz = tuple(
         c ** (1 / 3) if c > 0.008856 else 7.787 * c + 16 / 116 for c in (x, y, z)
@@ -242,7 +242,7 @@ def lab2xyz(color: LabTuple, whitepoint: CTuple = D65) -> XYZTuple:
         c ** 3 if c > 0.206893 else (c - 16 / 116) / 7.787 for c in (vx, vy, vz)
     )
 
-    return XYZTuple(x * whitepoint[0], y * whitepoint[1], z * whitepoint[2])
+    return XYZTuple(x * whitepoint[0] / 100, y * whitepoint[1] / 100, z * whitepoint[2] / 100)
 
 
 def rgb2lab(color: RGBTuple, whitepoint: CTuple = D65) -> LabTuple:
