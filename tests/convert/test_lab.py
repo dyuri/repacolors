@@ -28,8 +28,9 @@ def test_lab_dedicated():
 
 def test_lab_reverse():
     for _ in range(100):
+        wp = random.choice([D50, D55, D65, D75])
         c = RGBTuple(random.random(), random.random(), random.random())
-        c2 = lab2rgb(rgb2lab(c))
+        c2 = lab2rgb(rgb2lab(c, wp), wp)
         assert abs(c.red - c2.red) < 0.005
         assert abs(c.green - c2.green) < 0.005
         assert abs(c.blue - c2.blue) < 0.005
