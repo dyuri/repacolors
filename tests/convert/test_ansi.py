@@ -20,3 +20,12 @@ def test_ansi_out_of_range():
     assert eq(black, ansi2rgb(-45451))
     assert eq(black, ansi2rgb(256))
     assert eq(black, ansi2rgb(1231256))
+
+
+def test_ansi_reverse():
+    # above 16
+
+    for i in range(16, 256):
+        rgb = ansi2rgb(i)
+        rgb2 = ansi2rgb(rgb2ansi(rgb))
+        assert eq(rgb2, rgb)

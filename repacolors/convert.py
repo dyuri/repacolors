@@ -134,7 +134,9 @@ def rgb2ansi(color: CTuple) -> int:
             cc = (256 / 32 * (i + 1)) + i * 2
             if abs(cc - avg) <= 5:
                 ansigray = 232 + i
-                if distance(coli, tuple(res)) > distance(coli, (cc, cc, cc)):
+                c1 = ansi2rgb(ansicol)
+                c2 = ansi2rgb(ansigray)
+                if distance(color, c1) > distance(color, c2):
                     ansicol = ansigray
 
     return ansicol
