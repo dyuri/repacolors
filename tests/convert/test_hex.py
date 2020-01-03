@@ -3,13 +3,6 @@ import random
 import pytest
 
 
-def eq(rgb1, rgb2):
-    h1 = rgb2hex(rgb1, True)
-    h2 = rgb2hex(rgb2, True)
-
-    return h1 == h2
-
-
 def test_hex_long_short():
     c = RGBTuple(1, 1, 1)  # white
     assert rgb2hex(c) == '#fff'

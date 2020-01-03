@@ -171,16 +171,16 @@ def hex2rgb(hexcolor: str) -> RGBTuple:
 def rgb2yuv(color: RGBTuple) -> YUVTuple:
     r, g, b = color
     y = 0.299 * r + 0.587 * g + 0.114 * b
-    u = 0.5 - 0.168736 * r - 0.331364 * g + 0.5 * b
-    v = 0.5 + 0.5 * r - 0.418688 * g - 0.081312 * b
+    u = - 0.168736 * r - 0.331364 * g + 0.5 * b
+    v = 0.5 * r - 0.418688 * g - 0.081312 * b
     return YUVTuple(y, u, v)
 
 
 def yuv2rgb(color: YUVTuple) -> RGBTuple:
     y, u, v = color
-    r = y + 1.402 * (v - 0.5)
-    g = y - 0.34414 * (u - 0.5) - 0.71414 * (v - 0.5)
-    b = y + 1.772 * (u - 0.5)
+    r = y + 1.402 * v
+    g = y - 0.34414 * u - 0.71414 * v
+    b = y + 1.772 * u
     return RGBTuple(r, g, b)
 
 
