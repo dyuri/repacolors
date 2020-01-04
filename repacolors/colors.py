@@ -174,15 +174,15 @@ class Color():
     hue = ColorProperty("hue", "hsl")
     saturation = ColorProperty("saturation", "hsl")
     lightness = ColorProperty("lightness", "hsl")
-    cie_l = ColorProperty("l", "lab", False)
-    cie_a = ColorProperty("a", "lab", False)
-    cie_b = ColorProperty("b", "lab", False)
-    cie_x = ColorProperty("x", "xyz", False)
-    cie_y = ColorProperty("y", "xyz", False)
-    cie_z = ColorProperty("z", "xyz", False)
-    y = ColorProperty("y", "yuv", False)
-    u = ColorProperty("u", "yuv", False)
-    v = ColorProperty("v", "yuv", False)
+    cie_l = ColorProperty("l", "lab")
+    cie_a = ColorProperty("a", "lab")
+    cie_b = ColorProperty("b", "lab")
+    cie_x = ColorProperty("x", "xyz")
+    cie_y = ColorProperty("y", "xyz")
+    cie_z = ColorProperty("z", "xyz")
+    y = ColorProperty("y", "yuv")
+    u = ColorProperty("u", "yuv")
+    v = ColorProperty("v", "yuv")
 
     hex = ColorSpaceProperty("hex")
     ansi = ColorSpaceProperty("ansi")
@@ -363,7 +363,7 @@ class Color():
     @property
     def rgb256(self):
         if getattr(self, '_rgb256', None) is None:
-            hx = self.lhex[1:]
+            hx = convert.rgb2hex(self.rgb, True)[1:]
             self._rgb256 = convert.RGBTuple(*tuple(int(hx[v * 2:v * 2 + 2], 16) for v in range(3)))
         return self._rgb256
 
