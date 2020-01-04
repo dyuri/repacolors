@@ -273,7 +273,18 @@ def cmyk2rgb(color: CMYKTuple) -> RGBTuple:
     return RGBTuple(*(1 - (v * (1 - k) + k) for v in (c, m, y)))
 
 
-rgb2yiq = colorsys.rgb_to_yiq
-yiq2rgb = colorsys.yiq_to_rgb
-rgb2hsv = colorsys.rgb_to_hsv
-hsv2rgb = colorsys.hsv_to_rgb
+# add these as well since we have them for "free"
+def rgb2yiq(color: RGBTuple) -> CTuple:
+    return colorsys.rgb_to_yiq(*color)
+
+
+def yiq2rgb(color: CTuple) -> RGBTuple:
+    return RGBTuple(*colorsys.yiq_to_rgb(*color))
+
+
+def rgb2hsv(color: RGBTuple) -> CTuple:
+    return colorsys.rgb_to_hsv(*color)
+
+
+def hsv2rgb(color: CTuple) -> RGBTuple:
+    return RGBTuple(*colorsys.hsv_to_rgb(*color))
