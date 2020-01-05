@@ -1,10 +1,18 @@
 [tool.poetry]
 name = "repacolors"
-version = "0.1.0"
+version = "0.2.0"
 description = "Small library for color conversion, manipulation, etc."
 authors = ["Gyuri Horak <dyuri@horak.hu>"]
+repository = "https://github.com/dyuri/repacolors"
 license = "MIT"
 readme = "README.md"
+classifiers=[
+    'Environment :: Console',
+    'Intended Audience :: End Users/Desktop',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python',
+    'Topic :: Terminals :: Terminal Emulators/X Terminals',
+]
 
 [tool.poetry.dependencies]
 python = "^3.6"
