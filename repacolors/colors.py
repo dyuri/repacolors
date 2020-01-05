@@ -1,8 +1,10 @@
 import json
 import os
+import sys
 import subprocess
 from typing import Dict, Any, Optional, Callable, Iterator, List, Union
 from . import convert
+from . import terminal
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 CSSJSON = os.path.join(DIR, "css-color-names.json")
@@ -30,18 +32,20 @@ def cmul(t, n):
     return cls(*tuple(v * n for v in t))
 
 
-def transition(frm: "Color", to: "Color", steps: int = 10, prop: str = "hsl") -> Iterator["Color"]:
+def transition(
+    frm: "Color", to: "Color", steps: int = 10, prop: str = "hsl"
+) -> Iterator["Color"]:
     if steps < 1:
         raise ValueError(f"Transition steps should be more than 1 ({steps})")
 
-    prp = 'hsl' if prop == 'hsl:long' else prop
+    prp = "hsl" if prop == "hsl:long" else prop
     p1, p2 = getattr(frm, prp), getattr(to, prp)
     cls = p1.__class__
 
     # HSL direction - short vs long
-    if prop == 'hsl' and abs(p1[0] - p2[0]) > 0.5:
+    if prop == "hsl" and abs(p1[0] - p2[0]) > 0.5:
         p1 = convert.HSLTuple(p1[0] - 1.0, p1[1], p1[2])
-    elif prop == 'hsl:long' and abs(p1[0] - p2[0]) < 0.5:
+    elif prop == "hsl:long" and abs(p1[0] - p2[0]) < 0.5:
         p2 = convert.HSLTuple(p2[0] - 1.0, p2[1], p2[2])
 
     deltac = cls(*tuple((p[1] - p[0]) / steps for p in zip(p1, p2)))
@@ -62,7 +66,9 @@ def get_color(hx, cspace="rgb", container=COLORCACHE):
         container[hx] = color
 
     if cspace not in color and hasattr(convert, f"rgb2{cspace}"):
-        color[cspace] = getattr(convert, f"rgb2{cspace}")(convert.RGBTuple(*color["rgb"]))
+        color[cspace] = getattr(convert, f"rgb2{cspace}")(
+            convert.RGBTuple(*color["rgb"])
+        )
 
     return color
 
@@ -88,7 +94,7 @@ def closest(col: convert.CTuple, n: int = 3, cspace: str = "rgb"):
     return closests
 
 
-class ColorProperty():
+class ColorProperty:
     def __init__(self, name, mainprop, settable: bool = True):
         self.name = name
         self.mainprop = mainprop
@@ -112,7 +118,7 @@ class ColorProperty():
             raise TypeError("Should not modify an existing 'Color' instance")
 
 
-class ColorSpaceProperty():
+class ColorSpaceProperty:
     def __init__(self, name: str = "lab"):
         self.name = name
         self.privname = "_" + self.name
@@ -149,7 +155,7 @@ class ColorSpaceProperty():
             raise TypeError("Should not modify an existing 'Color' instance")
 
 
-class Color():
+class Color(terminal.TerminalPixel):
     """Color object
 
     Can be initialized with many kind of color definitions, and output different
@@ -164,6 +170,8 @@ class Color():
         "yuv": convert.YUVTuple,
         "cmyk": convert.CMYKTuple,
     }
+    DISPLAY_HEIGHT = 12
+    DISPLAY_WIDTH = 12
 
     red = ColorProperty("red", "rgb")
     green = ColorProperty("green", "rgb")
@@ -193,7 +201,12 @@ class Color():
     yiq = ColorSpaceProperty("yiq")
     cmyk = ColorSpaceProperty("cmyk")
 
-    def __init__(self, colordef: Any = None, equality: Optional[Callable[["Color", "Color"], bool]] = None, **kwargs):
+    def __init__(
+        self,
+        colordef: Any = None,
+        equality: Optional[Callable[["Color", "Color"], bool]] = None,
+        **kwargs,
+    ):
         self._hsl = convert.HSLTuple(0, 0, 0)
         self._rgb = convert.RGBTuple(0, 0, 0)
         self._alpha = 1  # TODO better alpha support
@@ -299,9 +312,11 @@ class Color():
                     return converter(obj)
 
         if isinstance(obj, tuple):
-            if isinstance(obj[0], (int, float)) \
-               and isinstance(obj[1], (int, float)) \
-               and isinstance(obj[2], (int, float)):
+            if (
+                isinstance(obj[0], (int, float))
+                and isinstance(obj[1], (int, float))
+                and isinstance(obj[2], (int, float))
+            ):
                 if abs(obj[0]) > 1 or abs(obj[1]) > 1 or abs(obj[2]) > 1:
                     return convert.RGBTuple(*tuple((abs(o) % 256) / 255 for o in obj))
                 else:
@@ -326,7 +341,9 @@ class Color():
 
         return Color(Color._colorize(obj))
 
-    def transition(self, to: "Color", steps: int = 10, prop: str = "hsl") -> Iterator["Color"]:
+    def transition(
+        self, to: "Color", steps: int = 10, prop: str = "hsl"
+    ) -> Iterator["Color"]:
         return transition(self, to, steps, prop)
 
     def closest_named(self, num: int = 3) -> List["Color"]:
@@ -341,7 +358,7 @@ class Color():
 
     @property
     def name(self):
-        if getattr(self, '_name', None) is None:
+        if getattr(self, "_name", None) is None:
             self._name = hex2name(self.lhex) or self.hex
         return self._name
 
@@ -356,15 +373,19 @@ class Color():
             hue = self.hue
             self._hsl = convert.rgb2hsl(self._rgb)
             if self._hsl.saturation == 0:
-                self._hsl = convert.HSLTuple(hue, self._hsl.saturation, self._hsl.lightness)
+                self._hsl = convert.HSLTuple(
+                    hue, self._hsl.saturation, self._hsl.lightness
+                )
         else:
             raise TypeError("Should not modify an existing 'Color' instance")
 
     @property
     def rgb256(self):
-        if getattr(self, '_rgb256', None) is None:
+        if getattr(self, "_rgb256", None) is None:
             hx = convert.rgb2hex(self.rgb, True)[1:]
-            self._rgb256 = convert.RGBTuple(*tuple(int(hx[v * 2:v * 2 + 2], 16) for v in range(3)))
+            self._rgb256 = convert.RGBTuple(
+                *tuple(int(hx[v * 2 : v * 2 + 2], 16) for v in range(3))
+            )
         return self._rgb256
 
     @rgb256.setter
@@ -387,12 +408,14 @@ class Color():
     @property
     def luminance(self):
         # should be the same as y in 'xyz'
-        if getattr(self, '_luminance', None) is None:
+        if getattr(self, "_luminance", None) is None:
             rgb = self.rgb
             rgb_lum = tuple(
                 c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb
             )
-            self._luminance = 0.2126 * rgb_lum[0] + 0.7152 * rgb_lum[1] + 0.0722 * rgb_lum[2]
+            self._luminance = (
+                0.2126 * rgb_lum[0] + 0.7152 * rgb_lum[1] + 0.0722 * rgb_lum[2]
+            )
 
         return self._luminance
 
@@ -410,33 +433,35 @@ class Color():
 
     @property
     def lhex(self):
-        if getattr(self, '_lhex', None) is None:
+        if getattr(self, "_lhex", None) is None:
             self._lhex = convert.rgb2hex(self.rgb, True)
         return self._lhex
 
     @property
     def cssrgb(self):
-        if getattr(self, '_cssrgb', None) is None:
+        if getattr(self, "_cssrgb", None) is None:
             rgb256 = self.rgb256
             self._cssrgb = f"rgb({rgb256.red}, {rgb256.green}, {rgb256.blue})"
         return self._cssrgb
 
     @property
     def cssrgba(self):
-        if getattr(self, '_cssrgba', None) is None:
+        if getattr(self, "_cssrgba", None) is None:
             rgb256 = self.rgb256
-            self._cssrgba = f"rgb({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})"
+            self._cssrgba = (
+                f"rgb({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})"
+            )
         return self._cssrgba
 
     @property
     def csshsl(self):
-        if getattr(self, '_csshsl', None) is None:
+        if getattr(self, "_csshsl", None) is None:
             self._csshsl = f"hsl({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%)"
         return self._csshsl
 
     @property
     def csshsla(self):
-        if getattr(self, '_csshsla', None) is None:
+        if getattr(self, "_csshsla", None) is None:
             self._csshsla = f"hsla({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%, {self.alpha:.5g})"
         return self._csshsla
 
@@ -526,4 +551,14 @@ class Color():
         rgb = self.rgb256
         return f"\x1b[38;2;{rgb.red};{rgb.green};{rgb.blue}m"
 
-    termreset = "\x1b[0m"
+    @property
+    def display(self):
+        img = [[self] * self.DISPLAY_WIDTH] * self.DISPLAY_HEIGHT
+        return terminal.draw(terminal.border(img))
+
+    def print(self, format: str = "display"):
+        if not sys.stdout.isatty() and format == "display":
+            format = "lhex"
+
+        content = getattr(self, format, self.lhex)
+        print(content)
