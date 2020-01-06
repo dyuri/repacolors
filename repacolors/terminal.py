@@ -7,7 +7,7 @@ def _linepairs(image: Iterable[Iterable[Any]]):
     return zip_longest(i, i)
 
 
-class TerminalPixel():
+class TerminalColor():
     """Abstract class for terminal pixel
     """
 
@@ -26,22 +26,22 @@ class TerminalPixel():
 
 
 def border(
-    image: List[List[TerminalPixel]],
+    image: List[List[TerminalColor]],
     border: int = 2,
-    bordercolor: Union[TerminalPixel, List[TerminalPixel]] = None,
-) -> Iterable[Iterable[TerminalPixel]]:
+    bordercolor: Union[TerminalColor, List[TerminalColor]] = None,
+) -> Iterable[Iterable[TerminalColor]]:
     if bordercolor is None:
-        bordercolor = [TerminalPixel(255), TerminalPixel(247)]
-    if isinstance(bordercolor, TerminalPixel):
+        bordercolor = [TerminalColor(255), TerminalColor(247)]
+    if isinstance(bordercolor, TerminalColor):
         bordercolor = [bordercolor]
 
-    tmpimg: List[List[TerminalPixel]] = []
+    tmpimg: List[List[TerminalColor]] = []
     height = len(image)
     width = len(image[0])
     blen = len(bordercolor)
 
     for y in range(border * 2 + height):
-        line: List[TerminalPixel] = []
+        line: List[TerminalColor] = []
         for x in range(border * 2 + width):
             if x < border or x >= border + width or y < border or y >= border + height:
                 line.append(bordercolor[(x + y) % blen])
@@ -52,7 +52,7 @@ def border(
     return tmpimg
 
 
-def draw(image: Iterable[Iterable[TerminalPixel]]) -> str:
+def draw(image: Iterable[Iterable[TerminalColor]]) -> str:
     """Draw image (with ANSI escape sequences)
 
     image - TerminalPixel[][], should be a rectangle
@@ -73,7 +73,7 @@ def draw(image: Iterable[Iterable[TerminalPixel]]) -> str:
                 output.append(f"{c2.termbg}▀")
             else:
                 output.append(" ")
-        output.append(TerminalPixel.termreset)
+        output.append(TerminalColor.termreset)
         output.append("\n")
 
     return "".join(output)

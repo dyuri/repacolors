@@ -108,4 +108,61 @@ def test_create_with_extra_params():
     c = Color(cie_l=53.23288, cie_a=80.1093, cie_b=67.22)
     assert c.lhex == "#ff0000"
 
-    # TODO ... xyz, yuv, hex, ansi, ...
+    c = Color(cie_x=.4124, cie_y=.2126, cie_z=.0193)
+    assert c.lhex == "#ff0000"
+
+    c = Color(y=.299, u=-.168736, v=.5)
+    assert c.lhex == "#ff0000"
+
+    c = Color(hex="#ff0000")
+    assert c.lhex == "#ff0000"
+
+    # red -> blue
+    c = Color("blue", hue=0)
+    assert c.lhex == "#ff0000"
+
+
+def test_equality():
+    c1 = Color("red", equality=Color.equal_hex)
+    c2 = Color("#ff0000", equality=Color.equal_hex)
+    assert c1 == c2
+
+    c1 = Color("red", equality=Color.equal_hsl)
+    c2 = Color("#ff0000", equality=Color.equal_hsl)
+    assert c1 == c2
+
+    c1 = Color("red", equality=Color.equal_hsla)
+    c2 = Color("#ff0000", equality=Color.equal_hsla)
+    assert c1 == c2
+
+    c1 = Color("red", equality=Color.equal_hash)
+    c2 = Color("#ff0000", equality=Color.equal_hash)
+    assert c1 == c2
+
+
+def test_equality_negative():
+    c1 = Color("#ff0000")
+    c2 = Color("#ff0001")
+    assert c1 != c2
+
+    c1 = Color("black", equality=Color.equal_hsl, hue=.6666)
+    c2 = Color("black", equality=Color.equal_hex, hue=0)
+    assert c2 == c1
+    assert c1 != c2
+
+    c1 = Color("red", equality=Color.equal_hsl, alpha=.5)
+    c2 = Color("red", equality=Color.equal_hsla, alpha=1)
+    assert c1 == c2
+    assert c2 != c1
+
+    c1 = Color("cyan", equality=Color.equal_hsl, hue=.501)
+    c2 = Color("cyan", equality=Color.equal_hash)
+    print(repr(c1), repr(c2))
+    print(hash(c1), hash(c2))
+    assert c1 == c2
+    assert c2 != c1
+
+
+def test_pick():
+    c = Color.pick(picker=["/usr/bin/echo", "#ff0000"])
+    assert c.lhex == "#ff0000"

@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import subprocess
+from itertools import zip_longest
 from typing import Dict, Any, Optional, Callable, Iterator, List, Union
 from . import convert
 from . import terminal
@@ -155,7 +156,7 @@ class ColorSpaceProperty:
             raise TypeError("Should not modify an existing 'Color' instance")
 
 
-class Color(terminal.TerminalPixel):
+class Color(terminal.TerminalColor):
     """Color object
 
     Can be initialized with many kind of color definitions, and output different
@@ -292,7 +293,7 @@ class Color(terminal.TerminalPixel):
         return hash(c1) == hash(c2)
 
     @classmethod
-    def pick(cls, picker: str = "xcolor") -> "Color":
+    def pick(cls, picker: Union[str, List[str]] = "xcolor") -> "Color":
         proc = subprocess.Popen(picker, stdout=subprocess.PIPE)
         res = proc.communicate()[0].strip().decode()
         return cls(res)
@@ -552,9 +553,33 @@ class Color(terminal.TerminalPixel):
         return f"\x1b[38;2;{rgb.red};{rgb.green};{rgb.blue}m"
 
     @property
-    def display(self):
+    def termimage(self):
         img = [[self] * self.DISPLAY_WIDTH] * self.DISPLAY_HEIGHT
         return terminal.draw(terminal.border(img))
+
+    @property
+    def info(self):
+        info = [
+            self.lhex if self.lhex == self.name else f"{self.name} - {self.lhex}",
+            self.cssrgb if self.alpha == 1 else self.cssrgba,
+            self.csshsl if self.alpha == 1 else self.csshsla,
+        ]
+
+        return "\n".join(info) + "\n"
+
+    @property
+    def display(self):
+        timg = self.termimage
+        info = self.info
+        output = ["\n"]
+        for timgl, infol in zip_longest(timg.split("\n"), info.split("\n")):
+            output.append("  ")
+            output.append(timgl or "")
+            output.append("  ")
+            output.append(infol or "")
+            output.append("  \n")
+
+        return "".join(output)
 
     def print(self, format: str = "display"):
         if not sys.stdout.isatty() and format == "display":
