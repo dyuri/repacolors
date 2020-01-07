@@ -164,5 +164,5 @@ def test_equality_negative():
 
 
 def test_pick():
-    c = Color.pick(picker=["/usr/bin/echo", "#ff0000"])
+    c = Color.pick(picker=["echo", "#ff0000"])
     assert c.lhex == "#ff0000"
