@@ -25,6 +25,9 @@ def test_cmyk_dedicated():
     for rgb, cmyk in colors:
         assert eq(cmyk2rgb(cmyk), rgb)
 
+    for rgb, cmyk in colors:
+        assert rgb2cmyk(rgb) == cmyk
+
 
 def test_cmyk_reverse():
     for _ in range(100):

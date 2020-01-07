@@ -450,7 +450,7 @@ class Color(terminal.TerminalColor):
         if getattr(self, "_cssrgba", None) is None:
             rgb256 = self.rgb256
             self._cssrgba = (
-                f"rgb({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})"
+                f"rgba({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})"
             )
         return self._cssrgba
 

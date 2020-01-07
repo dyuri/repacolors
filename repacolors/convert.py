@@ -139,7 +139,7 @@ def rgb2ansi(color: CTuple) -> int:
                 if distance(color, c1) > distance(color, c2):
                     ansicol = ansigray
 
-    return ansicol
+    return int(ansicol)
 
 
 def rgb2hex(color: CTuple, force_long: bool = False) -> str:
@@ -261,6 +261,7 @@ def rgb2cmyk(color: RGBTuple) -> CMYKTuple:
             k = v
 
     if k == 1.0:
+        print("cica")
         c, m, y = 0.0, 0.0, 0.0
     else:
         c, m, y = tuple((v - k) / (1 - k) for v in (vc, vm, vy))
