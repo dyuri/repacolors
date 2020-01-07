@@ -2,6 +2,8 @@
 
 Small library for color conversion, manipulation, etc.
 
+[![Build Status](https://travis-ci.com/dyuri/repacolors.svg?branch=master)](https://travis-ci.com/dyuri/repacolors)
+
 ## Install
 
 ```
