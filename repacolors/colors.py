@@ -96,25 +96,22 @@ def closest(col: convert.CTuple, n: int = 3, cspace: str = "rgb"):
 
 
 class ColorProperty:
-    def __init__(self, name, mainprop, settable: bool = True):
+    def __init__(self, name, mainprop):
         self.name = name
         self.mainprop = mainprop
-        self.settable = settable
 
     def __get__(self, obj: "Color", objtype: type):
         prop = getattr(obj, self.mainprop)
         return getattr(prop, self.name)
 
     def __set__(self, obj: "Color", val: Any):
-        if self.settable and not obj._initialized:
+        if not obj._initialized:
             prop = getattr(obj, self.mainprop)
             proplist = list(prop)
             proptype = prop.__class__
             idx = prop._fields.index(self.name)
             proplist[idx] = val
             setattr(obj, self.mainprop, proptype(*proplist))
-        elif not self.settable:
-            raise TypeError(f"'{self.name}' cannot be set")
         else:
             raise TypeError("Should not modify an existing 'Color' instance")
 

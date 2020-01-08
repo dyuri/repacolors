@@ -201,6 +201,8 @@ def test_attributes():
 def test_attributes_frozen():
     c = Color("red")
     with pytest.raises(TypeError):
+        c.hex = "#ff0000"
+    with pytest.raises(TypeError):
         c.red = .2
     # TODO
 
