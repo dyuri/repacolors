@@ -4,6 +4,7 @@ http://easyrgb.com/en/math.php
 """
 
 import colorsys
+import math
 from typing import Tuple, NamedTuple
 
 ANSI16 = [
@@ -62,6 +63,12 @@ class LabTuple(NamedTuple):
     l: float
     a: float
     b: float
+
+
+class LchTuple(NamedTuple):
+    l: float
+    c: float
+    h: float
 
 
 class CMYKTuple(NamedTuple):
@@ -243,6 +250,22 @@ def lab2xyz(color: LabTuple, whitepoint: CTuple = D65) -> XYZTuple:
     )
 
     return XYZTuple(x * whitepoint[0] / 100, y * whitepoint[1] / 100, z * whitepoint[2] / 100)
+
+
+def lab2lch(color: LabTuple) -> LchTuple:
+    l, a, b = color
+    c = (a ** 2 + b ** 2) ** .5
+    h = (math.atan2(b, a) / (math.pi * 2)) % 1  # convert radians to 0 - 1
+
+    return LchTuple(l, c, h)
+
+
+def lch2lab(color: LchTuple) -> LabTuple:
+    l, c, h = color
+    a = c * math.cos(h * 2 * math.pi)
+    b = c * math.sin(h * 2 * math.pi)
+
+    return LabTuple(l, a, b)
 
 
 def rgb2lab(color: RGBTuple, whitepoint: CTuple = D65) -> LabTuple:
