@@ -164,6 +164,7 @@ class Color(terminal.TerminalColor):
         "rgb": convert.RGBTuple,
         "hsl": convert.HSLTuple,
         "lab": convert.LabTuple,
+        "lch": convert.LchTuple,
         "xyz": convert.XYZTuple,
         "yuv": convert.YUVTuple,
         "cmyk": convert.CMYKTuple,
@@ -183,6 +184,8 @@ class Color(terminal.TerminalColor):
     cie_l = ColorProperty("l", "lab")
     cie_a = ColorProperty("a", "lab")
     cie_b = ColorProperty("b", "lab")
+    cie_c = ColorProperty("c", "lch")
+    cie_h = ColorProperty("h", "lch")
     cie_x = ColorProperty("x", "xyz")
     cie_y = ColorProperty("y", "xyz")
     cie_z = ColorProperty("z", "xyz")
@@ -194,6 +197,7 @@ class Color(terminal.TerminalColor):
     ansi = ColorSpaceProperty("ansi")
     xyz = ColorSpaceProperty("xyz")
     lab = ColorSpaceProperty("lab")
+    lch = ColorSpaceProperty("lch")
     yuv = ColorSpaceProperty("yuv")
     hsv = ColorSpaceProperty("hsv")
     yiq = ColorSpaceProperty("yiq")

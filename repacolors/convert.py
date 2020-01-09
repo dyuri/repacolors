@@ -276,6 +276,14 @@ def lab2rgb(color: LabTuple, whitepoint: CTuple = D65) -> RGBTuple:
     return xyz2rgb(lab2xyz(color, whitepoint))
 
 
+def rgb2lch(color: RGBTuple, whitepoint: CTuple = D65) -> LchTuple:
+    return lab2lch(rgb2lab(color, whitepoint))
+
+
+def lch2rgb(color: LchTuple, whitepoint: CTuple = D65) -> RGBTuple:
+    return lab2rgb(lch2lab(color), whitepoint)
+
+
 def rgb2cmyk(color: RGBTuple) -> CMYKTuple:
     vc, vm, vy = tuple(1 - v for v in color)
     k = 1.0
