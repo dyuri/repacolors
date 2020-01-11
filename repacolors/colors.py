@@ -1,9 +1,11 @@
 import json
 import os
 import sys
+import math
+import re
 import subprocess
 from itertools import zip_longest
-from typing import Dict, Any, Optional, Callable, Iterator, List, Union
+from typing import Dict, Any, Optional, Callable, Iterator, List, Union, Tuple
 from . import convert
 from . import terminal
 
@@ -164,7 +166,7 @@ class Color(terminal.TerminalColor):
         "rgb": convert.RGBTuple,
         "hsl": convert.HSLTuple,
         "lab": convert.LabTuple,
-        "lch": convert.LchTuple,
+        "lch": convert.LChTuple,
         "xyz": convert.XYZTuple,
         "yuv": convert.YUVTuple,
         "cmyk": convert.CMYKTuple,
@@ -265,10 +267,14 @@ class Color(terminal.TerminalColor):
         # from hex color
         if colordef.startswith("#"):
             self.hex = colordef
-        elif colordef.startswith("rgb"):
-            pass  # TODO rgb + rgba CSS
-        elif colordef.startswith("hsl"):
-            pass  # TODO hsl + hsla CSS
+            if len(colordef) == 5:
+                self.alpha = int(colordef[4] * 2, 16) / 255
+            elif len(colordef) == 9:
+                self.alpha = int(colordef[8:9], 16) / 255
+        elif colordef.startswith("rgb") or colordef.startswith("hsl"):
+            mode = colordef[:3]
+            clr, self.alpha = self.parse_css_color_values(colordef, mode)
+            setattr(self, mode, clr)
         else:
             hx = name2hex(colordef)
             if hx:
@@ -276,6 +282,54 @@ class Color(terminal.TerminalColor):
                 self._name = colordef
             else:
                 self.rgb = Color._colorize(colordef)
+
+    @staticmethod
+    def parse_css_color_values(csscolordef: str, mode: str = "rgb") -> Tuple[convert.CTuple, float]:
+        """Parse CSS color definition
+
+        https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
+        """
+        begin = csscolordef.index("(")
+        end = csscolordef.index(")")
+        cnt = csscolordef[begin + 1:end]
+        alpha = 1.0
+
+        if "," in cnt:
+            cnt = re.sub(r"\s+", " ", cnt)
+            values = [v.strip() for v in cnt.split(",")]
+        else:
+            cnt = cnt.replace("/", " ")
+            cnt = re.sub(r"\s+", " ", cnt)
+            values = [v.strip() for v in cnt.split(" ")]
+
+        if len(values) > 3:
+            alpha = Color.parse_css_color_value(values[3], "alpha")
+
+        cls = convert.HSLTuple if mode.lower() == "hsl" else convert.RGBTuple
+        color = cls(*tuple(Color.parse_css_color_value(v, mode) for v in values[:3]))
+
+        return color, alpha
+
+    @staticmethod
+    def parse_css_color_value(csscolorvalue: str, mode: str = "rgb") -> float:
+        if csscolorvalue[-1] == "%":
+            return float(csscolorvalue[:-1]) / 100
+        elif mode.lower() == "alpha":
+            return float(csscolorvalue)
+        elif mode.lower() == "hsl":
+            # hue only
+            if csscolorvalue[-4:] == "turn":
+                return float(csscolorvalue[:-4])
+            elif csscolorvalue[-3:] == "rad":
+                return float(csscolorvalue[:-3]) / (2 * math.pi)
+            elif csscolorvalue[-3:] == "deg":
+                csscolorvalue = csscolorvalue[:-3]
+
+            # degree
+            return float(csscolorvalue) / 360
+
+        # rgb
+        return float(csscolorvalue) / 255
 
     @staticmethod
     def equal_hex(c1: "Color", c2: "Color") -> bool:
@@ -420,6 +474,21 @@ class Color(terminal.TerminalColor):
             )
 
         return self._luminance
+
+    @property
+    def lhexa(self):
+        """Hexadecimal notation with alpha
+        """
+        ha = f"{int(self.alpha * 255):02x}"
+        return self.lhex + ha
+
+    @property
+    def hexa(self):
+        ha = f"{int(self.alpha * 255):02x}"
+        if ha[0] == ha[1] and len(self.hex) == 4:
+            return self.hex + ha[0]
+
+        return self.lhex + ha
 
     def contrast_ratio(self, other: "Color") -> float:
         """WCAG relative contrast ratio

@@ -1,4 +1,4 @@
-from repacolors import Color, convert
+from repacolors import Color, colors, convert
 import pytest
 
 
@@ -16,6 +16,11 @@ def test_create_from_colortuple():
     lab = convert.LabTuple(53.23288, 80.1093, 67.22)  # red
     c = Color(lab)
     assert lab == c.lab
+    assert c.lhex == "#ff0000"
+
+    lch = convert.LChTuple(53.23288, 104.5755, 0.1111)  # red
+    c = Color(lch)
+    assert lch == c.lch
     assert c.lhex == "#ff0000"
 
     xyz = convert.XYZTuple(.4124, .2126, .0193)  # red
@@ -43,11 +48,11 @@ def test_create_from_colortuple():
     assert rgb256t == c.rgb256
     assert c.lhex == "#ff0000"
 
-    rgbt = (1, 0, 0, 0)
+    rgbt = (1, 0, 0, .25)
     c = Color(rgbt)
     assert rgbt[:3] == c.rgb
     assert c.lhex == "#ff0000"
-    assert c.alpha == 0
+    assert c.alpha == .25
 
     rgb256t = (255, 0, 0, 128)
     c = Color(rgb256t)
@@ -81,7 +86,13 @@ def test_create_from_str():
     c = Color("#ff0000")
     assert c.lhex == "#ff0000"
 
-    # TODO rgb + hsl css definitions
+    c = Color("#f00a")
+    assert c.lhex == "#ff0000"
+    assert c.alpha - .66667 < 0.00001
+
+    c = Color("#ff000080")
+    assert c.lhex == "#ff0000"
+    assert c.alpha - .5 < 0.00001
 
     c = Color("red")
     assert c.lhex == "#ff0000"
@@ -89,6 +100,64 @@ def test_create_from_str():
     # whatever, from hash
     c = Color("whatever")
     assert isinstance(c, Color)
+
+
+def test_create_from_cssrgb():
+    cdefs = [
+        "rgb(255,0,153)",
+        "rgb(255, 0, 153)",
+        "rgba(255, 0, 153.0)",
+        "rgb(100%,0%,60%)",
+        "rgb(100%, 0%, 60%)",
+        "rgba(100%, 0, 60%)",
+        "rgb(255 0 153)",
+        "rgb(255, 0, 153, 1)",
+        "rgb(255, 0, 153, 100%)",
+        "rgba(255 0 153 / 1)",
+        "rgb(255 0 153 / 100%)",
+        "rgb(255, 0, 152.99, 1)",
+    ]
+
+    for cdef in cdefs:
+        c = Color(cdef)
+        assert c.lhexa == "#ff0099ff"
+
+    cdefs = [
+        "rgba(255,0,153,.5)",
+        "rgb(255, 0, 153,50%)",
+        "rgba(255 0 153.0 /  .5)",
+        "rgb(255 0% 153 /  50%)",
+    ]
+
+    for cdef in cdefs:
+        c = Color(cdef)
+        assert c.lhexa == "#ff00997f"
+
+
+def test_create_from_cssrgb():
+    cdefs = [
+        "hsl(270,60%,70%)",
+        "hsl(270, 60%, 70%, 100%)",
+        "hsl(270 60% 70%)",
+        "hsl(270deg, 60%, 70%, 1)",
+        "hsl(4.71239rad, 60%, 70%)",
+        "hsl(.75turn, 60%, 70%)",
+    ]
+
+    for cdef in cdefs:
+        c = Color(cdef)
+        assert c.lhexa == "#b385e1ff"
+
+    cdefs = [
+        "hsl(270, 60%, 50%, .15)",
+        "hsl(270, 60%, 50%, 15%)",
+        "hsl(270 60% 50% / .15)",
+        "hsl(270 60% 50% / 15%)",
+    ]
+
+    for cdef in cdefs:
+        c = Color(cdef)
+        assert c.lhexa == "#8033cc26"
 
 
 def test_create_with_extra_params():
@@ -145,6 +214,7 @@ def test_equality_negative():
     c1 = Color("#ff0000")
     c2 = Color("#ff0001")
     assert c1 != c2
+    assert c1 != "#ff0000"  # not compatible type
 
     c1 = Color("black", equality=Color.equal_hsl, hue=.6666)
     c2 = Color("black", equality=Color.equal_hex, hue=0)
@@ -165,8 +235,8 @@ def test_equality_negative():
 
 
 def test_attributes():
-    c = Color((1, 0, 0), alpha=.5)
-    assert c.alpha == .5
+    c = Color((1, 0, 0), alpha=.6667)
+    assert c.alpha == .6667
     assert c.red == 1
     assert c.green == 0
     assert c.blue == 0
@@ -189,23 +259,46 @@ def test_attributes():
     assert c.luminance == 0.2126
     assert c.hex == "#f00"
     assert c.lhex == "#ff0000"
+    assert c.hexa == "#f00a"
+    assert c.lhexa == "#ff0000aa"
     assert c.cssrgb == "rgb(255, 0, 0)"
-    assert c.cssrgba == "rgba(255, 0, 0, 0.5)"
+    assert c.cssrgba == "rgba(255, 0, 0, 0.6667)"
     assert c.csshsl == "hsl(0, 100%, 50%)"
-    assert c.csshsla == "hsla(0, 100%, 50%, 0.5)"
+    assert c.csshsla == "hsla(0, 100%, 50%, 0.6667)"
     assert c.ansi == 196
     assert c.termbg == "\x1b[48;2;255;0;0m"
     assert c.termfg == "\x1b[38;2;255;0;0m"
+    assert c.hex == str(c)
+
+    c = Color((1, 0, 0), alpha=.5)
+    assert c.hexa == c.lhexa
 
 
 def test_attributes_frozen():
     c = Color("red")
     with pytest.raises(TypeError):
+        c.rgb = (0, 1, 0)
+    with pytest.raises(TypeError):
+        c.hsl = (0, 1, 0)
+    with pytest.raises(TypeError):
         c.hex = "#ff0000"
     with pytest.raises(TypeError):
         c.red = .2
-    # TODO
+    with pytest.raises(TypeError):
+        c.alpha = .5
 
+
+def test_invalid_attributes():
+    class WrongColor(Color):
+        cica = colors.ColorSpaceProperty("cica")
+        cica_c = colors.ColorProperty("c", "cica")
+
+    with pytest.raises(TypeError):
+        wc = WrongColor()
+        wc.cica
+
+    with pytest.raises(TypeError):
+        wc = WrongColor(cica=12)
 
 # TODO termimage, info, display, print
 # TODO +, -, *, contrast, transition

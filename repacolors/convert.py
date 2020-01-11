@@ -65,7 +65,7 @@ class LabTuple(NamedTuple):
     b: float
 
 
-class LchTuple(NamedTuple):
+class LChTuple(NamedTuple):
     l: float
     c: float
     h: float
@@ -163,9 +163,9 @@ def hex2rgb(hexcolor: str) -> RGBTuple:
     try:
         rgb = hexcolor[1:]
 
-        if len(rgb) == 6:
+        if len(rgb) == 6 or len(rgb) == 8:
             r, g, b = rgb[0:2], rgb[2:4], rgb[4:6]
-        elif len(rgb) == 3:
+        elif len(rgb) == 3 or len(rgb) == 4:
             r, g, b = rgb[0] * 2, rgb[1] * 2, rgb[2] * 2
         else:
             raise ValueError()
@@ -252,15 +252,15 @@ def lab2xyz(color: LabTuple, whitepoint: CTuple = D65) -> XYZTuple:
     return XYZTuple(x * whitepoint[0] / 100, y * whitepoint[1] / 100, z * whitepoint[2] / 100)
 
 
-def lab2lch(color: LabTuple) -> LchTuple:
+def lab2lch(color: LabTuple) -> LChTuple:
     l, a, b = color
     c = (a ** 2 + b ** 2) ** .5
     h = (math.atan2(b, a) / (math.pi * 2)) % 1  # convert radians to 0 - 1
 
-    return LchTuple(l, c, h)
+    return LChTuple(l, c, h)
 
 
-def lch2lab(color: LchTuple) -> LabTuple:
+def lch2lab(color: LChTuple) -> LabTuple:
     l, c, h = color
     a = c * math.cos(h * 2 * math.pi)
     b = c * math.sin(h * 2 * math.pi)
@@ -276,11 +276,11 @@ def lab2rgb(color: LabTuple, whitepoint: CTuple = D65) -> RGBTuple:
     return xyz2rgb(lab2xyz(color, whitepoint))
 
 
-def rgb2lch(color: RGBTuple, whitepoint: CTuple = D65) -> LchTuple:
+def rgb2lch(color: RGBTuple, whitepoint: CTuple = D65) -> LChTuple:
     return lab2lch(rgb2lab(color, whitepoint))
 
 
-def lch2rgb(color: LchTuple, whitepoint: CTuple = D65) -> RGBTuple:
+def lch2rgb(color: LChTuple, whitepoint: CTuple = D65) -> RGBTuple:
     return lab2rgb(lch2lab(color), whitepoint)
 
 
