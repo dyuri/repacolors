@@ -134,7 +134,7 @@ def test_create_from_cssrgb():
         assert c.lhexa == "#ff00997f"
 
 
-def test_create_from_cssrgb():
+def test_create_from_csshsl():
     cdefs = [
         "hsl(270,60%,70%)",
         "hsl(270, 60%, 70%, 100%)",
