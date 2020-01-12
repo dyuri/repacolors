@@ -26,20 +26,51 @@ def hex2name(hx: str) -> str:
     return HEX2CSSNAME.get(hx, None)
 
 
-def cmul(t, n):
-    if not isinstance(t, tuple):
-        raise TypeError("Tuple/namedtuple required.")
+def equal_hex(c1: "Color", c2: "Color") -> bool:
+    return c1.lhex == c2.lhex
 
+
+def equal_hsl(c1: "Color", c2: "Color") -> bool:
+    return c1.csshsl == c2.csshsl
+
+
+def equal_hsla(c1: "Color", c2: "Color") -> bool:
+    return c1.csshsla == c2.csshsla
+
+
+def equal_hash(c1: "Color", c2: "Color") -> bool:
+    return hash(c1) == hash(c2)
+
+
+def mul(t: convert.CTuple, n: float) -> convert.CTuple:
     cls = t.__class__
 
-    return cls(*tuple(v * n for v in t))
+    return cls(*tuple(v * n for v in t))  # type: ignore
 
 
-def transition(
+def add_hsl(color1: "Color", color2: Union["Color", convert.HSLTuple]) -> "Color":
+    hsl1 = color1.hsl
+    hsl2 = color2.hsl if isinstance(color2, Color) else color2
+
+    hsl = tuple(p[0] + p[1] for p in zip(hsl1, hsl2))
+    return Color(
+        hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1))
+    )
+
+
+def add_rgb(color1: "Color", color2: Union["Color", convert.RGBTuple]) -> "Color":
+    rgb1 = color1.rgb
+    rgb2 = color2.rgb if isinstance(color2, Color) else color2
+
+    rgb = tuple(min(p[0] + p[1], 1) for p in zip(rgb1, rgb2))
+    return Color(rgb=rgb)
+
+
+def blend(
     frm: "Color", to: "Color", steps: int = 10, prop: str = "hsl"
 ) -> Iterator["Color"]:
     if steps < 1:
-        raise ValueError(f"Transition steps should be more than 1 ({steps})")
+        raise ValueError(f"Blend steps should be more than 1 ({steps})")
 
     prp = "hsl" if prop == "hsl:long" else prop
     p1, p2 = getattr(frm, prp), getattr(to, prp)
@@ -53,7 +84,7 @@ def transition(
 
     deltac = cls(*tuple((p[1] - p[0]) / steps for p in zip(p1, p2)))
 
-    return (frm + cmul(deltac, i) for i in range(steps + 1))
+    return (frm + mul(deltac, i) for i in range(steps + 1))
 
 
 # TODO
@@ -217,7 +248,7 @@ class Color(terminal.TerminalColor):
 
         self._initialized = False
 
-        self._eq = equality if equality is not None else self.equal_hex
+        self._eq = equality if equality is not None else equal_hex
 
         # from color
         if isinstance(colordef, Color):
@@ -331,22 +362,6 @@ class Color(terminal.TerminalColor):
         # rgb
         return float(csscolorvalue) / 255
 
-    @staticmethod
-    def equal_hex(c1: "Color", c2: "Color") -> bool:
-        return c1.lhex == c2.lhex
-
-    @staticmethod
-    def equal_hsl(c1: "Color", c2: "Color") -> bool:
-        return c1.csshsl == c2.csshsl
-
-    @staticmethod
-    def equal_hsla(c1: "Color", c2: "Color") -> bool:
-        return c1.csshsla == c2.csshsla
-
-    @staticmethod
-    def equal_hash(c1: "Color", c2: "Color") -> bool:
-        return hash(c1) == hash(c2)
-
     @classmethod
     def pick(cls, picker: Union[str, List[str]] = "xcolor") -> "Color":
         proc = subprocess.Popen(picker, stdout=subprocess.PIPE)
@@ -397,10 +412,10 @@ class Color(terminal.TerminalColor):
 
         return Color(Color._colorize(obj))
 
-    def transition(
+    def blend(
         self, to: "Color", steps: int = 10, prop: str = "hsl"
     ) -> Iterator["Color"]:
-        return transition(self, to, steps, prop)
+        return blend(self, to, steps, prop)
 
     def closest_named(self, num: int = 3) -> List["Color"]:
         # TODO return closest named colors

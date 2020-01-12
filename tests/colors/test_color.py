@@ -193,20 +193,20 @@ def test_create_with_extra_params():
 
 
 def test_equality():
-    c1 = Color("red", equality=Color.equal_hex)
-    c2 = Color("#ff0000", equality=Color.equal_hex)
+    c1 = Color("red", equality=colors.equal_hex)
+    c2 = Color("#ff0000", equality=colors.equal_hex)
     assert c1 == c2
 
-    c1 = Color("red", equality=Color.equal_hsl)
-    c2 = Color("#ff0000", equality=Color.equal_hsl)
+    c1 = Color("red", equality=colors.equal_hsl)
+    c2 = Color("#ff0000", equality=colors.equal_hsl)
     assert c1 == c2
 
-    c1 = Color("red", equality=Color.equal_hsla)
-    c2 = Color("#ff0000", equality=Color.equal_hsla)
+    c1 = Color("red", equality=colors.equal_hsla)
+    c2 = Color("#ff0000", equality=colors.equal_hsla)
     assert c1 == c2
 
-    c1 = Color("red", equality=Color.equal_hash)
-    c2 = Color("#ff0000", equality=Color.equal_hash)
+    c1 = Color("red", equality=colors.equal_hash)
+    c2 = Color("#ff0000", equality=colors.equal_hash)
     assert c1 == c2
 
 
@@ -216,18 +216,18 @@ def test_equality_negative():
     assert c1 != c2
     assert c1 != "#ff0000"  # not compatible type
 
-    c1 = Color("black", equality=Color.equal_hsl, hue=.6666)
-    c2 = Color("black", equality=Color.equal_hex, hue=0)
+    c1 = Color("black", equality=colors.equal_hsl, hue=.6666)
+    c2 = Color("black", equality=colors.equal_hex, hue=0)
     assert c2 == c1
     assert c1 != c2
 
-    c1 = Color("red", equality=Color.equal_hsl, alpha=.5)
-    c2 = Color("red", equality=Color.equal_hsla, alpha=1)
+    c1 = Color("red", equality=colors.equal_hsl, alpha=.5)
+    c2 = Color("red", equality=colors.equal_hsla, alpha=1)
     assert c1 == c2
     assert c2 != c1
 
-    c1 = Color("cyan", equality=Color.equal_hsl, hue=.501)
-    c2 = Color("cyan", equality=Color.equal_hash)
+    c1 = Color("cyan", equality=colors.equal_hsl, hue=.501)
+    c2 = Color("cyan", equality=colors.equal_hash)
     print(repr(c1), repr(c2))
     print(hash(c1), hash(c2))
     assert c1 == c2
