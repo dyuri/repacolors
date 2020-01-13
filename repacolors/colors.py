@@ -42,6 +42,14 @@ def equal_hash(c1: "Color", c2: "Color") -> bool:
     return hash(c1) == hash(c2)
 
 
+def normalize_rgb(c: convert.RGBTuple) -> convert.RGBTuple:
+    return convert.RGBTuple(*tuple(min(max(v, 0), 1) for v in c))
+
+
+def normalize_hsl(c: convert.HSLTuple) -> convert.HSLTuple:
+    return convert.HSLTuple(1 if c.hue == 1 else c.hue % 1, *tuple(min(max(v, 0), 1) for v in c[1:3]))
+
+
 def mul(t: convert.CTuple, n: float) -> convert.CTuple:
     cls = t.__class__
 
@@ -440,7 +448,7 @@ class Color(terminal.TerminalColor):
     @rgb.setter
     def rgb(self, rgb: convert.CTuple):
         if not self._initialized:
-            self._rgb = convert.RGBTuple(*rgb)
+            self._rgb = normalize_rgb(convert.RGBTuple(*rgb))
             hue = self.hue
             self._hsl = convert.rgb2hsl(self._rgb)
             if self._hsl.saturation == 0:
@@ -461,7 +469,7 @@ class Color(terminal.TerminalColor):
 
     @rgb256.setter
     def rgb256(self, rgb: convert.CTuple):
-        self.rgb = convert.RGBTuple(*tuple(c / 255 for c in rgb))
+        self.rgb = normalize_rgb(convert.RGBTuple(*tuple(c / 255 for c in rgb)))
         self._rgb256 = rgb
 
     @property
@@ -471,7 +479,7 @@ class Color(terminal.TerminalColor):
     @hsl.setter
     def hsl(self, hsl: convert.CTuple):
         if not self._initialized:
-            self._hsl = convert.HSLTuple(*hsl)
+            self._hsl = normalize_hsl(convert.HSLTuple(*hsl))
             self._rgb = convert.hsl2rgb(self._hsl)
         else:
             raise TypeError("Should not modify an existing 'Color' instance")
