@@ -83,4 +83,4 @@ if __name__ == '__main__':
         w = int(sys.argv[1])
 
     # print(terminal.draw(tmandel(w=w)))
-    print(charmandel(w=w))
+    print(charmandel(x0=-1.27, x1=-1.07, y0=-.38, y1=-.2, w=w))
