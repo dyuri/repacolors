@@ -261,6 +261,7 @@ class Color(terminal.TerminalColor):
         # from color
         if isinstance(colordef, Color):
             self.hsl = colordef.hsl
+            self.alpha = colordef.alpha
 
         # from tuple
         elif isinstance(colordef, (tuple, list)):
@@ -420,6 +421,9 @@ class Color(terminal.TerminalColor):
 
         return Color(Color._colorize(obj))
 
+    def set(self, **kwargs):
+        return Color(self, **kwargs)
+
     def blend(
         self, to: "Color", steps: int = 10, prop: str = "hsl"
     ) -> Iterator["Color"]:
@@ -430,7 +434,7 @@ class Color(terminal.TerminalColor):
         return []
 
     def distance(self, other: "Color") -> float:
-        return convert.distance(self.lab, other.lab)
+        return convert.distance_cie94(self.lab, other.lab)
 
     def similar(self, other: "Color") -> bool:
         return self.distance(other) < 2.3

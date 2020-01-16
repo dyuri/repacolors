@@ -67,7 +67,7 @@ def charmandel(x0=-2, x1=1, y0=-1.2, y1=1.2, w=60, h=None):
         line = []
         for p in l:
             c = color_for_point(p, 100)
-            bg = Color(hue=c.hue, saturation=c.saturation, lightness=c.lightness / 5)
+            bg = c.set(lightness=c.lightness / 5)
             line.append(c.termfg)
             line.append(bg.termbg)
             line.append(char_for_point(p, 100))

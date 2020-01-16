@@ -192,6 +192,9 @@ def test_create_with_extra_params():
     assert c.lhex == "#ff0000"
 
 
+# TODO colorize
+
+
 def test_equality():
     c1 = Color("red", equality=colors.equal_hex)
     c2 = Color("#ff0000", equality=colors.equal_hex)
@@ -300,8 +303,28 @@ def test_invalid_attributes():
     with pytest.raises(TypeError):
         wc = WrongColor(cica=12)
 
+
+def test_set():
+    c = Color("red")
+    c2 = c.set(green=1, blue=1)
+    assert c2 == Color("white")
+
+
+def test_distance():
+    w = Color("white")
+    b = Color("black")
+    aw = Color("#feffff")
+
+    assert w.distance(w) == 0
+    assert w.distance(b) >= 100
+    assert w.distance(aw) < 2
+
+    assert w.similar(aw)
+    assert not b.similar(aw)
+
+
 # TODO termimage, info, display, print
-# TODO +, -, *, contrast, transition
+# TODO +, -, *, contrast, blend
 
 
 def test_pick():
