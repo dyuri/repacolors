@@ -74,11 +74,11 @@ def add_rgb(color1: "Color", color2: Union["Color", convert.RGBTuple]) -> "Color
     return Color(rgb=rgb)
 
 
-def blend(
+def gradient(
     frm: "Color", to: "Color", steps: int = 10, prop: str = "hsl"
 ) -> Iterator["Color"]:
-    if steps < 1:
-        raise ValueError(f"Blend steps should be more than 1 ({steps})")
+    if steps < 2:
+        raise ValueError(f"Gradient steps should be more than 1 ({steps})")
 
     prp = "hsl" if prop == "hsl:long" else prop
     p1, p2 = getattr(frm, prp), getattr(to, prp)
@@ -90,9 +90,9 @@ def blend(
     elif prop == "hsl:long" and abs(p1[0] - p2[0]) < 0.5:
         p2 = convert.HSLTuple(p2[0] - 1.0, p2[1], p2[2])
 
-    deltac = cls(*tuple((p[1] - p[0]) / steps for p in zip(p1, p2)))
+    deltac = cls(*tuple((p[1] - p[0]) / (steps - 1) for p in zip(p1, p2)))
 
-    return (frm + mul(deltac, i) for i in range(steps + 1))
+    return (frm + mul(deltac, i) for i in range(steps))
 
 
 # TODO
@@ -424,10 +424,31 @@ class Color(terminal.TerminalColor):
     def set(self, **kwargs):
         return Color(self, **kwargs)
 
-    def blend(
+    def lighten(self, amount=.1):
+        return self.set(lightness=self.lightness + amount)
+
+    def darken(self, amount=.1):
+        return self.set(lightness=self.lightness - amount)
+
+    def saturate(self, amount=.1):
+        return self.set(saturation=self.saturation + amount)
+
+    def desaturate(self, amount=.1):
+        return self.set(saturation=self.saturation - amount)
+
+    def rotate(self, amount=.1):
+        return self.set(hue=self.hue + amount)
+
+    def gradient(
         self, to: "Color", steps: int = 10, prop: str = "hsl"
     ) -> Iterator["Color"]:
-        return blend(self, to, steps, prop)
+        return gradient(self, to, steps, prop)
+
+    def blend(self, color: "Color", prop: str = "hsl") -> "Color":
+        prop1 = getattr(self, prop)
+        prop2 = getattr(color, prop)
+        newprop = prop1.__class__(*tuple((v1 + v2) / 2 for v1, v2 in zip(prop1, prop2)))
+        return Color(newprop)
 
     def closest_named(self, num: int = 3) -> List["Color"]:
         # TODO return closest named colors

@@ -309,6 +309,13 @@ def test_set():
     c2 = c.set(green=1, blue=1)
     assert c2 == Color("white")
 
+    c = Color("#a33")
+    assert c.lighten().lightness > c.lightness
+    assert c.darken().lightness < c.lightness
+    assert c.saturate().saturation > c.saturation
+    assert c.desaturate().saturation < c.saturation
+    assert c.rotate().hue > c.hue
+
 
 def test_distance():
     w = Color("white")
@@ -322,6 +329,18 @@ def test_distance():
     assert w.similar(aw)
     assert not b.similar(aw)
 
+
+def test_blend():
+    r = Color("#f00")
+    g = Color("#0f0")
+    b = Color("#00f")
+
+    assert r.blend(b) == g
+    rbrgb = r.blend(b, "rgb")
+    assert rbrgb.red < r.red
+    assert rbrgb.red > b.red
+    assert rbrgb.blue > r.blue
+    assert rbrgb.blue < b.blue
 
 # TODO termimage, info, display, print
 # TODO +, -, *, contrast, blend
