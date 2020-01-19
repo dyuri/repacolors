@@ -335,16 +335,26 @@ def test_blend():
     g = Color("#0f0")
     b = Color("#00f")
 
-    assert r.blend(b) == g
-    rbrgb = r.blend(b, "rgb")
+    rbrgb = r.blend(b)  # rgb default
     assert rbrgb.red < r.red
     assert rbrgb.red > b.red
     assert rbrgb.blue > r.blue
     assert rbrgb.blue < b.blue
 
-# TODO termimage, info, display, print
-# TODO +, -, *, contrast, blend
+    assert r.blend(b, "hsl") == g
 
+
+# TODO
+# def test_color_add():
+#    r = Color("#f00")
+#    g = Color("#0f0")
+#
+#    assert r + g == Color("#ff0")
+#    assert r + g.rgb == Color("#ff0")
+#    assert r + g.hsl == Color("#ff0")
+
+# TODO -, *, contrast, blend, colorize
+# TODO termimage, info, display, print
 
 def test_pick():
     c = Color.pick(picker=["echo", "#ff0000"])
