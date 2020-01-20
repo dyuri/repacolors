@@ -94,9 +94,25 @@ def normalize(color: convert.CTuple, cspace: str = None) -> convert.CTuple:
     return color
 
 
-def mul(t: convert.CTuple, n: float) -> convert.CTuple:
+def mul_f(t: convert.CTuple, n: float) -> convert.CTuple:
     cls = t.__class__
     return cls(*tuple(v * n for v in t))  # type: ignore
+
+
+# TODO refactor with add
+def mul(color1: "Color", color2: Union["Color", convert.CTuple], cspace: str = None) -> "Color":
+    if cspace is None:
+        if isinstance(color2, Color):
+            cspace = color1.cspace
+        else:
+            cspace = get_cspace(color2)
+
+    ctup1 = getattr(color1, cspace)
+    ctup2 = getattr(color2, cspace) if isinstance(color2, Color) else color2
+    cls = ctup1.__class__
+
+    ctup = normalize(cls(*tuple(p1 * p2 for p1, p2 in zip(ctup1, ctup2))))
+    return Color(ctup)
 
 
 def add(color1: "Color", color2: Union["Color", convert.CTuple], cspace: str = None) -> "Color":
@@ -132,7 +148,7 @@ def gradient(
 
     deltac = cls(*tuple((p[1] - p[0]) / (steps - 1) for p in zip(p1, p2)))
 
-    return (frm + mul(deltac, i) for i in range(steps))
+    return (frm + mul_f(deltac, i) for i in range(steps))
 
 
 # TODO
@@ -435,7 +451,7 @@ class Color(terminal.TerminalColor):
         if isinstance(obj, cls):
             return obj.rgb
 
-        for cspace, ctype in Color.COLORSPACES.items():
+        for cspace, ctype in cls.COLORSPACES.items():
             if isinstance(obj, ctype):
                 converter = getattr(convert, f"{cspace}2rgb", None)
                 if converter:

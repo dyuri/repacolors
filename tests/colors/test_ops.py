@@ -72,12 +72,15 @@ def test_get_cspace():
     assert colors.get_cspace("whatever") == "unknown"
 
 
-def test_mul():
+def test_mul_f():
     c = convert.RGBTuple(.1, .1, .1)
-    assert Color(colors.mul(c, 3)) == Color((.3, .3, .3))
+    assert Color(colors.mul_f(c, 3)) == Color((.3, .3, .3))
 
     c = convert.RGBTuple(.6, .6, .6)
-    assert Color(colors.mul(c, .5)) == Color((.3, .3, .3))
+    assert Color(colors.mul_f(c, .5)) == Color((.3, .3, .3))
+
+    c = convert.RGBTuple(.1, .1, .1)
+    assert colors.mul_f(c, -1) == convert.RGBTuple(-.1, -.1, -.1)
 
 
 def test_add_hsl():

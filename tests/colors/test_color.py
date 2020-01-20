@@ -344,14 +344,13 @@ def test_blend():
     assert r.blend(b, "hsl") == g
 
 
-# TODO
-# def test_color_add():
-#    r = Color("#f00")
-#    g = Color("#0f0")
-#
-#    assert r + g == Color("#ff0")
-#    assert r + g.rgb == Color("#ff0")
-#    assert r + g.hsl == Color("#ff0")
+def test_color_add():
+    r = Color("#f00")
+    g = Color("#0f0")
+
+    assert r + g == Color("#ff0")
+    assert r + g.rgb == Color("#ff0")
+    assert r + g.hsl == Color("#fff")
 
 # TODO -, *, contrast, blend, colorize
 # TODO termimage, info, display, print
