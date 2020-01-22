@@ -14,19 +14,19 @@ def test_normalize_1base():
     assert colors.normalize_1base(c) == convert.RGBTuple(1, 1, 1)
 
 
-def test_normalize_hsl():
+def test_normalize_huebase():
     for _ in range(100):
         c = convert.HSLTuple(random.random(), random.random(), random.random())
-        assert c == colors.normalize_hsl(c)
+        assert c == colors.normalize_huebase(c)
 
     c = convert.HSLTuple(-1, -1, -1)
-    assert colors.normalize_hsl(c) == convert.RGBTuple(0, 0, 0)
+    assert colors.normalize_huebase(c) == convert.HSLTuple(0, 0, 0)
 
-    c = convert.HSLTuple(3, 123, 1.0001)
-    assert colors.normalize_hsl(c) == convert.RGBTuple(0, 1, 1)
+    c = convert.HSVTuple(3, 123, 1.0001)
+    assert colors.normalize_huebase(c) == convert.HSVTuple(0, 1, 1)
 
-    c = convert.HSLTuple(1.2, 1, 1)
-    assert .1999 <= colors.normalize_hsl(c).hue <= .20001
+    c = convert.HWBTuple(1.2, .4, .2)
+    assert .1999 <= colors.normalize_huebase(c).hue <= .20001
 
 
 def test_normalize_lab():
@@ -64,6 +64,8 @@ def test_get_cspace():
     assert colors.get_cspace(c) == "rgb"
     assert colors.get_cspace(c.rgb) == "rgb"
     assert colors.get_cspace(c.hsl) == "hsl"
+    assert colors.get_cspace(c.hsv) == "hsv"
+    assert colors.get_cspace(c.hwb) == "hwb"
     assert colors.get_cspace(c.yuv) == "yuv"
     assert colors.get_cspace(c.xyz) == "xyz"
     assert colors.get_cspace(c.lab) == "lab"

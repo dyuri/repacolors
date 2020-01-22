@@ -51,6 +51,18 @@ class RGBTuple(NamedTuple):
     blue: float
 
 
+class HSVTuple(NamedTuple):
+    hue: float
+    saturation: float
+    value: float
+
+
+class HWBTuple(NamedTuple):
+    hue: float
+    whiteness: float
+    blackness: float
+
+
 class YUVTuple(NamedTuple):
     y: float
     u: float
@@ -224,6 +236,14 @@ def hsl2rgb(color: HSLTuple) -> RGBTuple:
     return RGBTuple(r, g, b)
 
 
+def hsv2hwb(color: HSVTuple) -> HWBTuple:
+    return HWBTuple(color[0], (1 - color[1]) * color[2], 1 - color[2])
+
+
+def hwb2hsv(color: HWBTuple) -> HSVTuple:
+    return HSVTuple(color[0], 1 if color[2] == 1 else 1 - (color[1] / (1 - color[2])), 1 - color[2])
+
+
 def rgb2xyz(color: RGBTuple) -> XYZTuple:
     vr, vg, vb = tuple(
         ((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92 for c in color
@@ -336,9 +356,17 @@ def yiq2rgb(color: CTuple) -> RGBTuple:
     return RGBTuple(*colorsys.yiq_to_rgb(*color))
 
 
-def rgb2hsv(color: RGBTuple) -> CTuple:
-    return colorsys.rgb_to_hsv(*color)
+def rgb2hsv(color: RGBTuple) -> HSVTuple:
+    return HSVTuple(*colorsys.rgb_to_hsv(*color))
 
 
-def hsv2rgb(color: CTuple) -> RGBTuple:
+def hsv2rgb(color: HSVTuple) -> RGBTuple:
     return RGBTuple(*colorsys.hsv_to_rgb(*color))
+
+
+def rgb2hwb(color: RGBTuple) -> HWBTuple:
+    return hsv2hwb(rgb2hsv(color))
+
+
+def hwb2rgb(color: HWBTuple) -> RGBTuple:
+    return hsv2rgb(hwb2hsv(color))

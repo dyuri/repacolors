@@ -48,6 +48,10 @@ def get_cspace(color: Union[convert.CTuple, "Color"]):
         cspace = "hsl"
     elif isinstance(color, convert.RGBTuple):
         cspace = "rgb"
+    elif isinstance(color, convert.HSVTuple):
+        cspace = "hsv"
+    elif isinstance(color, convert.HWBTuple):
+        cspace = "hwb"
     elif isinstance(color, convert.YUVTuple):
         cspace = "yuv"
     elif isinstance(color, convert.XYZTuple):
@@ -67,8 +71,9 @@ def normalize_1base(c: convert.CTuple) -> convert.CTuple:
     return cls(*tuple(min(max(v, 0), 1) for v in c))  # type: ignore
 
 
-def normalize_hsl(c: convert.CTuple) -> convert.HSLTuple:
-    return convert.HSLTuple(1 if c[0] == 1 else c[0] % 1, *tuple(min(max(v, 0), 1) for v in c[1:3]))
+def normalize_huebase(c: convert.CTuple) -> convert.CTuple:
+    cls = c.__class__
+    return cls(1 if c[0] == 1 else c[0] % 1, *tuple(min(max(v, 0), 1) for v in c[1:3]))  # type: ignore
 
 
 def normalize_lab(c: convert.CTuple) -> convert.LabTuple:
@@ -82,10 +87,11 @@ def normalize_lch(c: convert.CTuple) -> convert.LChTuple:
 def normalize(color: convert.CTuple, cspace: str = None) -> convert.CTuple:
     cspace = cspace if cspace else get_cspace(color)
 
+    # TODO hsv, hwb
     if cspace in ["rgb", "yuv", "xyz", "cmyk"]:
         return normalize_1base(color)
-    elif cspace == "hsl":
-        return normalize_hsl(color)
+    elif cspace in ["hsl", "hsv", "hwb"]:
+        return normalize_huebase(color)
     elif cspace == "lab":
         return normalize_lab(color)
     elif cspace == "lch":
@@ -260,6 +266,8 @@ class Color(terminal.TerminalColor):
     COLORSPACES = {
         "rgb": convert.RGBTuple,
         "hsl": convert.HSLTuple,
+        "hsv": convert.HSVTuple,
+        "hwb": convert.HWBTuple,
         "lab": convert.LabTuple,
         "lch": convert.LChTuple,
         "xyz": convert.XYZTuple,
@@ -278,6 +286,9 @@ class Color(terminal.TerminalColor):
     hue = ColorProperty("hue", "hsl")
     saturation = ColorProperty("saturation", "hsl")
     lightness = ColorProperty("lightness", "hsl")
+    whiteness = ColorProperty("whiteness", "hwb")
+    blackness = ColorProperty("blackness", "hwb")
+    value = ColorProperty("value", "hsv")
     cie_l = ColorProperty("l", "lab")
     cie_a = ColorProperty("a", "lab")
     cie_b = ColorProperty("b", "lab")
@@ -291,6 +302,8 @@ class Color(terminal.TerminalColor):
     v = ColorProperty("v", "yuv")
 
     hex = ColorSpaceProperty("hex")
+    hsv = ColorSpaceProperty("hsv")
+    hwb = ColorSpaceProperty("hwb")
     ansi = ColorSpaceProperty("ansi")
     xyz = ColorSpaceProperty("xyz")
     lab = ColorSpaceProperty("lab")
@@ -374,7 +387,7 @@ class Color(terminal.TerminalColor):
                 self.alpha = int(colordef[4] * 2, 16) / 255
             elif len(colordef) == 9:
                 self.alpha = int(colordef[8:9], 16) / 255
-        elif colordef.startswith("rgb") or colordef.startswith("hsl"):
+        elif colordef.startswith("rgb") or colordef.startswith("hsl") or colordef.startswith("hwb"):
             mode = colordef[:3]
             clr, self.alpha = self.parse_css_color_values(colordef, mode)
             setattr(self, mode, clr)
@@ -411,7 +424,7 @@ class Color(terminal.TerminalColor):
         if len(values) > 3:
             alpha = Color.parse_css_color_value(values[3], "alpha")
 
-        cls = convert.HSLTuple if mode.lower() == "hsl" else convert.RGBTuple
+        cls = Color.COLORSPACES.get(mode.lower(), convert.RGBTuple)
         color = cls(*tuple(Color.parse_css_color_value(v, mode) for v in values[:3]))
 
         return color, alpha
@@ -422,7 +435,7 @@ class Color(terminal.TerminalColor):
             return float(csscolorvalue[:-1]) / 100
         elif mode.lower() == "alpha":
             return float(csscolorvalue)
-        elif mode.lower() == "hsl":
+        elif mode.lower() in ["hsl", "hwb"]:
             # hue only
             if csscolorvalue[-4:] == "turn":
                 return float(csscolorvalue[:-4])
@@ -574,7 +587,7 @@ class Color(terminal.TerminalColor):
     @hsl.setter
     def hsl(self, hsl: convert.CTuple):
         if not self._initialized:
-            self._hsl = normalize_hsl(convert.HSLTuple(*hsl))
+            self._hsl = normalize_huebase(convert.HSLTuple(*hsl))
             self._rgb = convert.hsl2rgb(self._hsl)
         else:
             raise TypeError("Should not modify an existing 'Color' instance")
@@ -653,6 +666,18 @@ class Color(terminal.TerminalColor):
         if getattr(self, "_csshsla", None) is None:
             self._csshsla = f"hsla({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%, {self.alpha:.5g})"
         return self._csshsla
+
+    @property
+    def csshwb(self):
+        if getattr(self, "_csshwb", None) is None:
+            self._csshwb = f"hwb({int(360 * self.hue)}, {(100 * self.whiteness):.4g}%, {(100 * self.blackness):.4g}%)"
+        return self._csshwb
+
+    @property
+    def csshwba(self):
+        if getattr(self, "_csshwba", None) is None:
+            self._csshwba = f"hwb({int(360 * self.hue)}, {(100 * self.whiteness):.4g}%, {(100 * self.blackness):.4g}%, {self.alpha:.5g})"
+        return self._csshwba
 
     @property
     def alpha(self):
