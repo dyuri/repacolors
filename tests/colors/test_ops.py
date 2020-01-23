@@ -34,11 +34,11 @@ def test_normalize_lab():
         c = convert.LabTuple(random.random() * 100, random.random() * 256 - 128, random.random() * 256 - 128)
         assert c == colors.normalize_lab(c)
 
-    c = convert.LabTuple(200, 200, 200)
-    assert colors.normalize_lab(c) == convert.LabTuple(100, 128, 128)
+    c = convert.LabTuple(500, 200, 200)
+    assert colors.normalize_lab(c) == convert.LabTuple(400, 160, 160)
 
     c = convert.LabTuple(-200, -200, -200)
-    assert colors.normalize_lab(c) == convert.LabTuple(0, -128, -128)
+    assert colors.normalize_lab(c) == convert.LabTuple(0, -160, -160)
 
 
 def test_normalize_lch():
@@ -46,8 +46,8 @@ def test_normalize_lch():
         c = convert.LChTuple(random.random() * 100, random.random() * 200, random.random())
         assert c == colors.normalize_lch(c)
 
-    c = convert.LChTuple(200, 300, .1)
-    assert colors.normalize_lch(c) == convert.LChTuple(100, 200, .1)
+    c = convert.LChTuple(500, 300, .1)
+    assert colors.normalize_lch(c) == convert.LChTuple(400, 230, .1)
 
     c = convert.LChTuple(20, 30, 3.12)
     assert 0.119999 < colors.normalize_lch(c).h < 0.120001
@@ -118,9 +118,9 @@ def test_add_lab():
     dct = convert.LabTuple(10, 10, -10)
     assert colors.add(c, dct) == Color(convert.LabTuple(60, 60, -60))
 
-    c = Color(convert.LabTuple(50, 100, -100))
-    dc = Color(convert.LabTuple(60, 100, -100))
-    assert colors.add(c, dc) == Color(convert.LabTuple(100, 128, -128))
+    c = Color(convert.LabTuple(250, 100, -100))
+    dc = Color(convert.LabTuple(260, 100, -100))
+    assert colors.add(c, dc) == Color(convert.LabTuple(400, 160, -160))
 
 
 def test_add_rgb():

@@ -77,11 +77,11 @@ def normalize_huebase(c: convert.CTuple) -> convert.CTuple:
 
 
 def normalize_lab(c: convert.CTuple) -> convert.LabTuple:
-    return convert.LabTuple(min(max(c[0], 0), 100), *tuple(min(max(v, -128), 128) for v in c[1:3]))
+    return convert.LabTuple(min(max(c[0], 0), 400), *tuple(min(max(v, -160), 160) for v in c[1:3]))
 
 
 def normalize_lch(c: convert.CTuple) -> convert.LChTuple:
-    return convert.LChTuple(min(max(c[0], 0), 100), min(abs(c[1]), 200), 1 if c[2] == 1 else c[2] % 1)
+    return convert.LChTuple(min(max(c[0], 0), 400), min(abs(c[1]), 230), 1 if c[2] == 1 else c[2] % 1)
 
 
 def normalize(color: convert.CTuple, cspace: str = None) -> convert.CTuple:
@@ -519,11 +519,11 @@ class Color(terminal.TerminalColor):
         return self.set(hue=self.hue + amount)
 
     def gradient(
-        self, to: "Color", steps: int = 10, prop: str = None
+        self, to: "Color", steps: int = 10, cspace: str = None
     ) -> Iterator["Color"]:
-        if prop is None:
-            prop = self.cspace
-        return gradient(self, to, steps, prop)
+        if cspace is None:
+            cspace = self.cspace
+        return gradient(self, to, steps, cspace)
 
     def blend(self, color: "Color", prop: str = None) -> "Color":
         if prop is None:
