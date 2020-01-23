@@ -137,9 +137,9 @@ def test_create_from_cssrgb():
 def test_create_from_csshsl():
     cdefs = [
         "hsl(270,60%,70%)",
-        "hsl(270, 60%, 70%, 100%)",
+        "hsla(270, 60%, 70%, 100%)",
         "hsl(270 60% 70%)",
-        "hsl(270deg, 60%, 70%, 1)",
+        "hsla(270deg, 60%, 70%, 1)",
         "hsl(4.71239rad, 60%, 70%)",
         "hsl(.75turn, 60%, 70%)",
     ]
@@ -150,14 +150,40 @@ def test_create_from_csshsl():
 
     cdefs = [
         "hsl(270, 60%, 50%, .15)",
-        "hsl(270, 60%, 50%, 15%)",
+        "hsla(270, 60%, 50%, 15%)",
         "hsl(270 60% 50% / .15)",
-        "hsl(270 60% 50% / 15%)",
+        "hsla(270 60% 50% / 15%)",
     ]
 
     for cdef in cdefs:
         c = Color(cdef)
         assert c.lhexa == "#8033cc26"
+
+
+def test_create_from_csshwb():
+    cdefs = [
+        "hwb(270,60%,70%)",
+        "hwb(270, 60%, 70%, 100%)",
+        "hwb(270 60% 70%)",
+        "hwb(270deg, 60%, 70%, 1)",
+        "hwb(4.71239rad, 60%, 70%)",
+        "hwb(.75turn, 60%, 70%)",
+    ]
+
+    for cdef in cdefs:
+        c = Color(cdef)
+        assert c.lhexa == "#73994dff"
+
+    cdefs = [
+        "hwb(270, 60%, 50%, .15)",
+        "hwb(270, 60%, 50%, 15%)",
+        "hwb(270 60% 50% / .15)",
+        "hwb(270 60% 50% / 15%)",
+    ]
+
+    for cdef in cdefs:
+        c = Color(cdef)
+        assert c.lhexa == "#8c998026"
 
 
 def test_create_with_extra_params():
