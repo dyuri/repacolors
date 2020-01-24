@@ -6,6 +6,8 @@ http://easyrgb.com/en/math.php
 import colorsys
 import math
 from typing import Tuple, NamedTuple
+from .types import *
+from .distance import distance
 
 ANSI16 = [
     (0, 0, 0),
@@ -31,96 +33,6 @@ D50 = (96.422, 100.000, 82.521)
 D55 = (95.682, 100.000, 92.149)
 D65 = (95.047, 100.000, 108.883)
 D75 = (94.972, 100.000, 122.638)
-
-# weighting factors
-Wgraphic = (1, 0.045, 0.015)
-Wtextile = (2, 0.048, 0.014)
-
-CTuple = Tuple[float, ...]
-
-
-class HSLTuple(NamedTuple):
-    hue: float
-    saturation: float
-    lightness: float
-
-
-class RGBTuple(NamedTuple):
-    red: float
-    green: float
-    blue: float
-
-
-class HSVTuple(NamedTuple):
-    hue: float
-    saturation: float
-    value: float
-
-
-class HWBTuple(NamedTuple):
-    hue: float
-    whiteness: float
-    blackness: float
-
-
-class YUVTuple(NamedTuple):
-    y: float
-    u: float
-    v: float
-
-
-class XYZTuple(NamedTuple):
-    x: float
-    y: float
-    z: float
-
-
-class LabTuple(NamedTuple):
-    l: float
-    a: float
-    b: float
-
-
-class LChTuple(NamedTuple):
-    l: float
-    c: float
-    h: float
-
-
-class CMYKTuple(NamedTuple):
-    c: float
-    m: float
-    y: float
-    k: float
-
-
-def distance(c1: CTuple, c2: CTuple) -> float:
-    """Color distance (eucledian)
-    Can be used with RGB or CIE-Lab values (CIE76)
-    https://en.wikipedia.org/wiki/Color_difference#CIELAB_%CE%94E*
-
-    For Lab colors: diff ~ 2.3 - just noticeable difference
-    """
-
-    return ((c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2 + (c1[2] - c2[2]) ** 2) ** 0.5
-
-
-def distance_cie94(lab1: LabTuple, lab2: LabTuple, w: Tuple[float, float, float] = Wgraphic) -> float:
-    """Color distance
-    CIE94
-    https://en.wikipedia.org/wiki/Color_difference#CIE94
-    """
-
-    dL = lab1.l - lab2.l
-    c1 = (lab1.a ** 2 + lab1.b ** 2) ** .5
-    c2 = (lab2.a ** 2 + lab2.b ** 2) ** .5
-    dC = c1 - c2
-    dH2 = (lab1.a - lab2.a) ** 2 + (lab1.b - lab2.b) ** 2 - dC ** 2
-    dH = 0 if dH2 <= 0 else dH2 ** .5
-    sC = 1 + w[1] * c1
-    sH = 1 + w[2] * c1
-
-    return ((dL / w[0]) ** 2 + (dC / sC) ** 2 + (dH / sH) ** 2) ** .5
 
 
 def ansi2rgb(ansicolor: int) -> RGBTuple:
@@ -249,9 +161,9 @@ def rgb2xyz(color: RGBTuple) -> XYZTuple:
         ((c + 0.055) / 1.055) ** 2.4 if c > 0.04045 else c / 12.92 for c in color
     )
 
-    x = 0.4124 * vr + 0.3576 * vg + 0.1805 * vb
-    y = 0.2126 * vr + 0.7152 * vg + 0.0722 * vb
-    z = 0.0193 * vr + 0.1192 * vg + 0.9505 * vb
+    x = 0.4124564 * vr + 0.3575761 * vg + 0.1804375 * vb
+    y = 0.2126729 * vr + 0.7151522 * vg + 0.0721750 * vb
+    z = 0.0193339 * vr + 0.1191920 * vg + 0.9503041 * vb
 
     return XYZTuple(x, y, z)
 
@@ -259,9 +171,9 @@ def rgb2xyz(color: RGBTuple) -> XYZTuple:
 def xyz2rgb(color: XYZTuple) -> RGBTuple:
     x, y, z = color
 
-    vr = x * 3.2406 + y * -1.5372 + z * -0.4986
-    vg = x * -0.9689 + y * 1.8758 + z * 0.0415
-    vb = x * 0.0557 + y * -0.2040 + z * 1.0570
+    vr = x * 3.2404542 + y * -1.5371385 + z * -0.4985314
+    vg = x * -0.9692660 + y * 1.8760108 + z * 0.0415560
+    vb = x * 0.0556434 + y * -0.2040259 + z * 1.0572252
 
     r, g, b = tuple(
         1.055 * c ** (1 / 2.4) - 0.055 if c > 0.0031308 else 12.92 * c
@@ -275,7 +187,7 @@ def xyz2lab(color: XYZTuple, whitepoint: CTuple = D65) -> LabTuple:
     x, y, z = tuple(100 * c[0] / c[1] for c in zip(color, whitepoint))
 
     vx, vy, vz = tuple(
-        c ** (1 / 3) if c > 0.008856 else 7.787 * c + 16 / 116 for c in (x, y, z)
+        c ** (.33333333) if c > 0.008856452 else 7.787 * c + 0.137931034 for c in (x, y, z)
     )
 
     return LabTuple(116 * vy - 16, 500 * (vx - vy), 200 * (vy - vz))
@@ -288,7 +200,7 @@ def lab2xyz(color: LabTuple, whitepoint: CTuple = D65) -> XYZTuple:
     vz = vy - b / 200
 
     x, y, z = tuple(
-        c ** 3 if c > 0.206893 else (c - 16 / 116) / 7.787 for c in (vx, vy, vz)
+        c ** 3 if c > 0.206896552 else (c - 0.137931034) / 7.787 for c in (vx, vy, vz)
     )
 
     return XYZTuple(x * whitepoint[0] / 100, y * whitepoint[1] / 100, z * whitepoint[2] / 100)

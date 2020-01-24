@@ -276,7 +276,7 @@ def test_attributes():
     assert c.saturation == 1
     assert c.lightness == .5
     assert 53.3 > c.cie_l > 53.2
-    assert 80.2 > c.cie_a > 80.1
+    assert 80.2 > c.cie_a > 80.05
     assert 67.3 > c.cie_b > 67.2
     assert .5 > c.cie_x > .4
     assert .3 > c.cie_y > .2

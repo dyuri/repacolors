@@ -1,4 +1,4 @@
-from repacolors.convert import *
+from repacolors.distance import *
 import random
 
 

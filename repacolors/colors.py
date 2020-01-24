@@ -8,6 +8,8 @@ from itertools import zip_longest
 from typing import Dict, Any, Optional, Callable, Iterator, List, Union, Tuple
 from . import convert
 from . import terminal
+from . import distance
+from .types import *
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 CSSJSON = os.path.join(DIR, "css-color-names.json")
@@ -42,49 +44,49 @@ def equal_hash(c1: "Color", c2: "Color") -> bool:
     return hash(c1) == hash(c2)
 
 
-def get_cspace(color: Union[convert.CTuple, "Color"]):
+def get_cspace(color: Union[CTuple, "Color"]):
     cspace = getattr(color, "cspace", "unknown")
-    if isinstance(color, convert.HSLTuple):
+    if isinstance(color, HSLTuple):
         cspace = "hsl"
-    elif isinstance(color, convert.RGBTuple):
+    elif isinstance(color, RGBTuple):
         cspace = "rgb"
-    elif isinstance(color, convert.HSVTuple):
+    elif isinstance(color, HSVTuple):
         cspace = "hsv"
-    elif isinstance(color, convert.HWBTuple):
+    elif isinstance(color, HWBTuple):
         cspace = "hwb"
-    elif isinstance(color, convert.YUVTuple):
+    elif isinstance(color, YUVTuple):
         cspace = "yuv"
-    elif isinstance(color, convert.XYZTuple):
+    elif isinstance(color, XYZTuple):
         cspace = "xyz"
-    elif isinstance(color, convert.LabTuple):
+    elif isinstance(color, LabTuple):
         cspace = "lab"
-    elif isinstance(color, convert.LChTuple):
+    elif isinstance(color, LChTuple):
         cspace = "lch"
-    elif isinstance(color, convert.CMYKTuple):
+    elif isinstance(color, CMYKTuple):
         cspace = "cmyk"
 
     return cspace
 
 
-def normalize_1base(c: convert.CTuple) -> convert.CTuple:
+def normalize_1base(c: CTuple) -> CTuple:
     cls = c.__class__
     return cls(*tuple(min(max(v, 0), 1) for v in c))  # type: ignore
 
 
-def normalize_huebase(c: convert.CTuple) -> convert.CTuple:
+def normalize_huebase(c: CTuple) -> CTuple:
     cls = c.__class__
     return cls(1 if c[0] == 1 else c[0] % 1, *tuple(min(max(v, 0), 1) for v in c[1:3]))  # type: ignore
 
 
-def normalize_lab(c: convert.CTuple) -> convert.LabTuple:
-    return convert.LabTuple(min(max(c[0], 0), 400), *tuple(min(max(v, -160), 160) for v in c[1:3]))
+def normalize_lab(c: CTuple) -> LabTuple:
+    return LabTuple(min(max(c[0], 0), 400), *tuple(min(max(v, -160), 160) for v in c[1:3]))
 
 
-def normalize_lch(c: convert.CTuple) -> convert.LChTuple:
-    return convert.LChTuple(min(max(c[0], 0), 400), min(abs(c[1]), 230), 1 if c[2] == 1 else c[2] % 1)
+def normalize_lch(c: CTuple) -> LChTuple:
+    return LChTuple(min(max(c[0], 0), 400), min(abs(c[1]), 230), 1 if c[2] == 1 else c[2] % 1)
 
 
-def normalize(color: convert.CTuple, cspace: str = None) -> convert.CTuple:
+def normalize(color: CTuple, cspace: str = None) -> CTuple:
     cspace = cspace if cspace else get_cspace(color)
 
     # TODO hsv, hwb
@@ -100,13 +102,13 @@ def normalize(color: convert.CTuple, cspace: str = None) -> convert.CTuple:
     return color
 
 
-def mul_f(t: convert.CTuple, n: float) -> convert.CTuple:
+def mul_f(t: CTuple, n: float) -> CTuple:
     cls = t.__class__
     return cls(*tuple(v * n for v in t))  # type: ignore
 
 
 # TODO refactor with add
-def mul(color1: "Color", color2: Union["Color", convert.CTuple], cspace: str = None) -> "Color":
+def mul(color1: "Color", color2: Union["Color", CTuple], cspace: str = None) -> "Color":
     if cspace is None:
         if isinstance(color2, Color):
             cspace = color1.cspace
@@ -121,7 +123,7 @@ def mul(color1: "Color", color2: Union["Color", convert.CTuple], cspace: str = N
     return Color(ctup)
 
 
-def add(color1: "Color", color2: Union["Color", convert.CTuple], cspace: str = None) -> "Color":
+def add(color1: "Color", color2: Union["Color", CTuple], cspace: str = None) -> "Color":
     if cspace is None:
         if isinstance(color2, Color):
             cspace = color1.cspace
@@ -148,9 +150,9 @@ def gradient(
 
     # HSL direction - short vs long
     if prop == "hsl" and abs(p1[0] - p2[0]) > 0.5:
-        p1 = convert.HSLTuple(p1[0] - 1.0, p1[1], p1[2])
+        p1 = HSLTuple(p1[0] - 1.0, p1[1], p1[2])
     elif prop == "hsl:long" and abs(p1[0] - p2[0]) < 0.5:
-        p2 = convert.HSLTuple(p2[0] - 1.0, p2[1], p2[2])
+        p2 = HSLTuple(p2[0] - 1.0, p2[1], p2[2])
 
     deltac = cls(*tuple((p[1] - p[0]) / (steps - 1) for p in zip(p1, p2)))
 
@@ -171,16 +173,16 @@ def get_color(hx, cspace="rgb", container=COLORCACHE):
 
     if cspace not in color and hasattr(convert, f"rgb2{cspace}"):
         color[cspace] = getattr(convert, f"rgb2{cspace}")(
-            convert.RGBTuple(*color["rgb"])
+            RGBTuple(*color["rgb"])
         )
 
     return color
 
 
 # TODO
-def closest(col: convert.CTuple, n: int = 3, cspace: str = "rgb"):
+def closest(col: CTuple, n: int = 3, cspace: str = "rgb"):
     named_colors = HEX2CSSNAME.keys()
-    chx = convert.rgb2hex(convert.RGBTuple(*col), True)
+    chx = convert.rgb2hex(RGBTuple(*col), True)
     if cspace != "rgb":
         col = getattr(convert, f"rgb2{cspace}")(*col)
     closests = []
@@ -189,7 +191,7 @@ def closest(col: convert.CTuple, n: int = 3, cspace: str = "rgb"):
         if chx == nch:
             continue
         nc = get_color(nch, cspace)
-        distance = convert.distance(col, nc[cspace])
+        distance = distance.distance(col, nc[cspace])
         closests.append({"color": nc, "distance": distance})
         # not the most efficient way, but...
         closests.sort(key=lambda c: c["distance"])
@@ -263,17 +265,6 @@ class Color(terminal.TerminalColor):
     formats as well.
     """
 
-    COLORSPACES = {
-        "rgb": convert.RGBTuple,
-        "hsl": convert.HSLTuple,
-        "hsv": convert.HSVTuple,
-        "hwb": convert.HWBTuple,
-        "lab": convert.LabTuple,
-        "lch": convert.LChTuple,
-        "xyz": convert.XYZTuple,
-        "yuv": convert.YUVTuple,
-        "cmyk": convert.CMYKTuple,
-    }
     DISPLAY_HEIGHT = 12
     DISPLAY_WIDTH = 12
 
@@ -319,8 +310,8 @@ class Color(terminal.TerminalColor):
         equality: Optional[Callable[["Color", "Color"], bool]] = None,
         **kwargs,
     ):
-        self._hsl = convert.HSLTuple(0, 0, 0)
-        self._rgb = convert.RGBTuple(0, 0, 0)
+        self._hsl = HSLTuple(0, 0, 0)
+        self._rgb = RGBTuple(0, 0, 0)
         self._alpha = 1  # TODO better alpha support
         self.cspace = "hsl"
 
@@ -353,7 +344,7 @@ class Color(terminal.TerminalColor):
         self._initialized = True
 
     def _init_tuple(self, colordef: Union[tuple, list]):
-        for cspace, ctype in Color.COLORSPACES.items():
+        for cspace, ctype in COLORSPACES.items():
             if isinstance(colordef, ctype):
                 setattr(self, cspace, colordef)
                 self.cspace = cspace
@@ -371,11 +362,11 @@ class Color(terminal.TerminalColor):
 
     def _init_bytes(self, colordef: bytes):
         if len(colordef) == 3:
-            self.rgb256 = colordef
+            self.rgb256 = RGBTuple(*tuple(colordef))
             self.cspace = "rgb"
         elif len(colordef) == 4:
-            self.rgb256 = colordef[:3]
-            self.alpha = colordef[3]
+            self.rgb256 = RGBTuple(*tuple(colordef[:3]))
+            self.alpha = list(colordef)[3] / 255
             self.cspace = "rgb"
 
     def _init_str(self, colordef: str):
@@ -403,7 +394,7 @@ class Color(terminal.TerminalColor):
                 self.cspace = "rgb"
 
     @staticmethod
-    def parse_css_color_values(csscolordef: str, mode: str = "rgb") -> Tuple[convert.CTuple, float]:
+    def parse_css_color_values(csscolordef: str, mode: str = "rgb") -> Tuple[CTuple, float]:
         """Parse CSS color definition
 
         https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
@@ -424,7 +415,7 @@ class Color(terminal.TerminalColor):
         if len(values) > 3:
             alpha = Color.parse_css_color_value(values[3], "alpha")
 
-        cls = Color.COLORSPACES.get(mode.lower(), convert.RGBTuple)
+        cls = COLORSPACES.get(mode.lower(), RGBTuple)
         color = cls(*tuple(Color.parse_css_color_value(v, mode) for v in values[:3]))
 
         return color, alpha
@@ -457,14 +448,14 @@ class Color(terminal.TerminalColor):
         return cls(res)
 
     @classmethod
-    def _colorize(cls, obj: Any) -> convert.RGBTuple:
-        if isinstance(obj, convert.RGBTuple):
+    def _colorize(cls, obj: Any) -> RGBTuple:
+        if isinstance(obj, RGBTuple):
             return obj
 
         if isinstance(obj, cls):
             return obj.rgb
 
-        for cspace, ctype in cls.COLORSPACES.items():
+        for cspace, ctype in COLORSPACES.items():
             if isinstance(obj, ctype):
                 converter = getattr(convert, f"{cspace}2rgb", None)
                 if converter:
@@ -477,9 +468,9 @@ class Color(terminal.TerminalColor):
                 and isinstance(obj[2], (int, float))
             ):
                 if abs(obj[0]) > 1 or abs(obj[1]) > 1 or abs(obj[2]) > 1:
-                    return convert.RGBTuple(*tuple((abs(o) % 256) / 255 for o in obj))
+                    return RGBTuple(*tuple((abs(o) % 256) / 255 for o in obj))
                 else:
-                    return convert.RGBTuple(*tuple(abs(o) for o in obj))
+                    return RGBTuple(*tuple(abs(o) for o in obj))
 
         # use the hash
         try:
@@ -491,7 +482,7 @@ class Color(terminal.TerminalColor):
         g = int(hsh / 1e3) % 1e3
         b = int(hsh / 1e6) % 1e3
 
-        return convert.RGBTuple(r / 999, g / 999, b / 999)
+        return RGBTuple(r / 999, g / 999, b / 999)
 
     @classmethod
     def colorize(cls, obj: Any) -> "Color":
@@ -538,7 +529,7 @@ class Color(terminal.TerminalColor):
         return []
 
     def distance(self, other: "Color") -> float:
-        return convert.distance_cie94(self.lab, other.lab)
+        return distance.distance_cie94(self.lab, other.lab)
 
     def similar(self, other: "Color") -> bool:
         return self.distance(other) < 2.3
@@ -554,13 +545,13 @@ class Color(terminal.TerminalColor):
         return self._rgb
 
     @rgb.setter
-    def rgb(self, rgb: convert.CTuple):
+    def rgb(self, rgb: CTuple):
         if not self._initialized:
-            self._rgb = normalize_1base(convert.RGBTuple(*rgb))  # type: ignore
+            self._rgb = normalize_1base(RGBTuple(*rgb))  # type: ignore
             hue = self.hue
             self._hsl = convert.rgb2hsl(self._rgb)
             if self._hsl.saturation == 0:
-                self._hsl = convert.HSLTuple(
+                self._hsl = HSLTuple(
                     hue, self._hsl.saturation, self._hsl.lightness
                 )
         else:
@@ -570,14 +561,14 @@ class Color(terminal.TerminalColor):
     def rgb256(self):
         if getattr(self, "_rgb256", None) is None:
             hx = convert.rgb2hex(self.rgb, True)[1:]
-            self._rgb256 = convert.RGBTuple(
+            self._rgb256 = RGBTuple(
                 *tuple(int(hx[v * 2 : v * 2 + 2], 16) for v in range(3))
             )
         return self._rgb256
 
     @rgb256.setter
-    def rgb256(self, rgb: convert.CTuple):
-        self.rgb = normalize_1base(convert.RGBTuple(*tuple(c / 255 for c in rgb)))
+    def rgb256(self, rgb: CTuple):
+        self.rgb = normalize_1base(RGBTuple(*tuple(c / 255 for c in rgb)))
         self._rgb256 = rgb
 
     @property
@@ -585,9 +576,9 @@ class Color(terminal.TerminalColor):
         return self._hsl
 
     @hsl.setter
-    def hsl(self, hsl: convert.CTuple):
+    def hsl(self, hsl: CTuple):
         if not self._initialized:
-            self._hsl = normalize_huebase(convert.HSLTuple(*hsl))
+            self._hsl = normalize_huebase(HSLTuple(*hsl))
             self._rgb = convert.hsl2rgb(self._hsl)
         else:
             raise TypeError("Should not modify an existing 'Color' instance")
@@ -782,8 +773,8 @@ class Color(terminal.TerminalColor):
 
         return "".join(output)
 
-    def print(self, format: str = "display"):
-        if not sys.stdout.isatty() and format == "display":
+    def print(self, format: str = "display", force_ansi: bool = False):
+        if not force_ansi and not sys.stdout.isatty() and format == "display":
             format = "lhex"
 
         content = getattr(self, format, self.lhex)
