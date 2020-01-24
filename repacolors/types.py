@@ -7,58 +7,58 @@ CTuple = Tuple[float, ...]
 
 
 class HSLTuple(NamedTuple):
-    hue: float
-    saturation: float
-    lightness: float
+    hue: float = 0
+    saturation: float = 0
+    lightness: float = 0
 
 
 class RGBTuple(NamedTuple):
-    red: float
-    green: float
-    blue: float
+    red: float = 0
+    green: float = 0
+    blue: float = 0
 
 
 class HSVTuple(NamedTuple):
-    hue: float
-    saturation: float
-    value: float
+    hue: float = 0
+    saturation: float = 0
+    value: float = 0
 
 
 class HWBTuple(NamedTuple):
-    hue: float
-    whiteness: float
-    blackness: float
+    hue: float = 0
+    whiteness: float = 0
+    blackness: float = 0
 
 
 class YUVTuple(NamedTuple):
-    y: float
-    u: float
-    v: float
+    y: float = 0
+    u: float = 0
+    v: float = 0
 
 
 class XYZTuple(NamedTuple):
-    x: float
-    y: float
-    z: float
+    x: float = 0
+    y: float = 0
+    z: float = 0
 
 
 class LabTuple(NamedTuple):
-    l: float
-    a: float
-    b: float
+    l: float = 0
+    a: float = 0
+    b: float = 0
 
 
 class LChTuple(NamedTuple):
-    l: float
-    c: float
-    h: float
+    l: float = 0
+    c: float = 0
+    h: float = 0
 
 
 class CMYKTuple(NamedTuple):
-    c: float
-    m: float
-    y: float
-    k: float
+    c: float = 0
+    m: float = 0
+    y: float = 0
+    k: float = 0
 
 
 COLORSPACES = {

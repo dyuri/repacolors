@@ -138,6 +138,38 @@ def add(color1: "Color", color2: Union["Color", CTuple], cspace: str = None) -> 
     return Color(ctup)
 
 
+def average(colorlist: List["Color"], weights: List[float] = [], cspace: str = None) -> "Color":
+    if len(colorlist) < 1:
+        return Color()
+    elif len(colorlist) == 1:
+        return colorlist[0]
+
+    if cspace is None or cspace not in COLORSPACES:
+        cspace = colorlist[0].cspace
+
+    lenw, lenc = len(weights), len(colorlist)
+
+    if lenw < lenc:
+        weights = weights + [1 for _ in range(lenc - lenw)]
+    elif lenw > lenc:
+        weights = weights[:lenc]
+
+    sw = sum(weights)
+    weights = [w / sw for w in weights]
+
+    cls = getattr(colorlist[0], cspace).__class__
+    retp = cls()
+    propnum = len(retp)
+    alpha = 0
+
+    for c, w in zip(colorlist, weights):
+        cprop = getattr(c, cspace)
+        retp = tuple(retp[i] + cprop[i] * w for i in range(propnum))
+        alpha += c.alpha * w
+
+    return Color(cls(*retp), alpha=alpha, cspace=cspace)
+
+
 def gradient(
     frm: "Color", to: "Color", steps: int = 10, prop: str = "hsl"
 ) -> Iterator["Color"]:
@@ -307,12 +339,13 @@ class Color(terminal.TerminalColor):
     def __init__(
         self,
         colordef: Any = None,
+        alpha: float = 1,
         equality: Optional[Callable[["Color", "Color"], bool]] = None,
         **kwargs,
     ):
         self._hsl = HSLTuple(0, 0, 0)
         self._rgb = RGBTuple(0, 0, 0)
-        self._alpha = 1  # TODO better alpha support
+        self._alpha = alpha
         self.cspace = "hsl"
 
         self._initialized = False
@@ -516,13 +549,19 @@ class Color(terminal.TerminalColor):
             cspace = self.cspace
         return gradient(self, to, steps, cspace)
 
-    def blend(self, color: "Color", prop: str = None) -> "Color":
-        if prop is None:
-            prop = self.cspace
-        prop1 = getattr(self, prop)
-        prop2 = getattr(color, prop)
-        newprop = prop1.__class__(*tuple((v1 + v2) / 2 for v1, v2 in zip(prop1, prop2)))
-        return Color(newprop, cspace=self.cspace)
+    def mix(self, color: "Color", ratio: float = 0.5, cspace: str = None) -> "Color":
+        if cspace is None or cspace not in COLORSPACES:
+            cspace = self.cspace
+
+        ratio = min(abs(ratio), 1)
+        prop1 = getattr(self, cspace)
+        prop2 = getattr(color, cspace)
+        newprop = prop1.__class__(*tuple(v1 * (1 - ratio) + v2 * ratio for v1, v2 in zip(prop1, prop2)))
+        alpha = self.alpha * (1 - ratio) + color.alpha * ratio
+        return Color(newprop, alpha=alpha, cspace=self.cspace)
+
+    def average(self, colorlist: List["Color"], weights: List[float] = [], cspace: str = None) -> "Color":
+        return average([self] + colorlist, weights, cspace)
 
     def closest_named(self, num: int = 3) -> List["Color"]:
         # TODO return closest named colors
@@ -578,7 +617,7 @@ class Color(terminal.TerminalColor):
     @hsl.setter
     def hsl(self, hsl: CTuple):
         if not self._initialized:
-            self._hsl = normalize_huebase(HSLTuple(*hsl))
+            self._hsl = normalize_huebase(HSLTuple(*hsl))  # type: ignore
             self._rgb = convert.hsl2rgb(self._hsl)
         else:
             raise TypeError("Should not modify an existing 'Color' instance")

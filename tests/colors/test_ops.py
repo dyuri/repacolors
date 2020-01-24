@@ -136,3 +136,10 @@ def test_add_rgb():
     dct = convert.RGBTuple(-.1, -.1, -.1)
     assert colors.add(c, dct) == Color(convert.RGBTuple(.6, .6, .6))
 
+
+def test_average():
+    r, g, b = Color("red"), Color("#0f0"), Color("blue")
+
+    assert colors.average([r, g, b]) == Color("#555")
+    assert colors.average([r, g, b], [1, 2, 1]) == Color("#408040")
+    assert colors.average([r, g, b], [1, 2, 1], "lch") == Color("#00c336")

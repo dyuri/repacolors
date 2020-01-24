@@ -356,18 +356,28 @@ def test_distance():
     assert not b.similar(aw)
 
 
-def test_blend():
+def test_mix():
     r = Color("#f00")
     g = Color("#0f0")
     b = Color("#00f")
 
-    rbrgb = r.blend(b)  # rgb default
+    rbrgb = r.mix(b)  # rgb default
     assert rbrgb.red < r.red
     assert rbrgb.red > b.red
     assert rbrgb.blue > r.blue
     assert rbrgb.blue < b.blue
 
-    assert r.blend(b, "hsl") == g
+    assert r.mix(b, cspace="hsl") == g
+
+    assert r.mix(b, .25) == Color("#bf0040")
+    assert r.mix(b, .75) == Color("#4000bf")
+
+
+def test_average():
+    r, g, b = Color("red"), Color("#0f0"), Color("blue")
+
+    assert r.average([g, b], [1, 2, 1]) == g.average([r, b], [2, 1, 1])
+    assert r.average([g, b], [1, 2, 1], "lab") == g.average([b, r], [2, 1, 1], "lab")
 
 
 def test_color_add():
