@@ -9,6 +9,8 @@ from typing import Dict, Any, Optional, Callable, Iterator, List, Union, Tuple
 from . import convert
 from . import terminal
 from . import distance
+from . import blend
+from . import ops
 from .types import *
 
 DIR = os.path.dirname(os.path.realpath(__file__))
@@ -28,169 +30,6 @@ def hex2name(hx: str) -> str:
     return HEX2CSSNAME.get(hx, None)
 
 
-def equal_hex(c1: "Color", c2: "Color") -> bool:
-    return c1.lhex == c2.lhex
-
-
-def equal_hsl(c1: "Color", c2: "Color") -> bool:
-    return Color(c1, 1).csshsl == Color(c2, 1).csshsl
-
-
-def equal_hsla(c1: "Color", c2: "Color") -> bool:
-    return c1.csshsl == c2.csshsl
-
-
-def equal_hash(c1: "Color", c2: "Color") -> bool:
-    return hash(c1) == hash(c2)
-
-
-def get_cspace(color: Union[CTuple, "Color"]):
-    cspace = getattr(color, "cspace", "unknown")
-    if isinstance(color, HSLTuple):
-        cspace = "hsl"
-    elif isinstance(color, RGBTuple):
-        cspace = "rgb"
-    elif isinstance(color, HSVTuple):
-        cspace = "hsv"
-    elif isinstance(color, HWBTuple):
-        cspace = "hwb"
-    elif isinstance(color, YUVTuple):
-        cspace = "yuv"
-    elif isinstance(color, XYZTuple):
-        cspace = "xyz"
-    elif isinstance(color, LabTuple):
-        cspace = "lab"
-    elif isinstance(color, LChTuple):
-        cspace = "lch"
-    elif isinstance(color, CMYKTuple):
-        cspace = "cmyk"
-
-    return cspace
-
-
-def normalize_1base(c: CTuple) -> CTuple:
-    cls = c.__class__
-    return cls(*tuple(min(max(v, 0), 1) for v in c))  # type: ignore
-
-
-def normalize_huebase(c: CTuple) -> CTuple:
-    cls = c.__class__
-    return cls(1 if c[0] == 1 else c[0] % 1, *tuple(min(max(v, 0), 1) for v in c[1:3]))  # type: ignore
-
-
-def normalize_lab(c: CTuple) -> LabTuple:
-    return LabTuple(min(max(c[0], 0), 400), *tuple(min(max(v, -160), 160) for v in c[1:3]))
-
-
-def normalize_lch(c: CTuple) -> LChTuple:
-    return LChTuple(min(max(c[0], 0), 400), min(abs(c[1]), 230), 1 if c[2] == 1 else c[2] % 1)
-
-
-def normalize(color: CTuple, cspace: str = None) -> CTuple:
-    cspace = cspace if cspace else get_cspace(color)
-
-    # TODO hsv, hwb
-    if cspace in ["rgb", "yuv", "xyz", "cmyk"]:
-        return normalize_1base(color)
-    elif cspace in ["hsl", "hsv", "hwb"]:
-        return normalize_huebase(color)
-    elif cspace == "lab":
-        return normalize_lab(color)
-    elif cspace == "lch":
-        return normalize_lch(color)
-
-    return color
-
-
-def mul_f(t: CTuple, n: float) -> CTuple:
-    cls = t.__class__
-    return cls(*tuple(v * n for v in t))  # type: ignore
-
-
-# TODO refactor with add
-def mul(color1: "Color", color2: Union["Color", CTuple], cspace: str = None) -> "Color":
-    if cspace is None:
-        if isinstance(color2, Color):
-            cspace = color1.cspace
-        else:
-            cspace = get_cspace(color2)
-
-    ctup1 = getattr(color1, cspace)
-    ctup2 = getattr(color2, cspace) if isinstance(color2, Color) else color2
-    cls = ctup1.__class__
-
-    ctup = normalize(cls(*tuple(p1 * p2 for p1, p2 in zip(ctup1, ctup2))))
-    return Color(ctup)
-
-
-def add(color1: "Color", color2: Union["Color", CTuple], cspace: str = None) -> "Color":
-    if cspace is None:
-        if isinstance(color2, Color):
-            cspace = color1.cspace
-        else:
-            cspace = get_cspace(color2)
-
-    ctup1 = getattr(color1, cspace)
-    ctup2 = getattr(color2, cspace) if isinstance(color2, Color) else color2
-    cls = ctup1.__class__
-
-    ctup = normalize(cls(*tuple(p1 + p2 for p1, p2 in zip(ctup1, ctup2))))
-    return Color(ctup)
-
-
-def average(colorlist: List["Color"], weights: List[float] = [], cspace: str = None) -> "Color":
-    if len(colorlist) < 1:
-        return Color()
-    elif len(colorlist) == 1:
-        return colorlist[0]
-
-    if cspace is None or cspace not in COLORSPACES:
-        cspace = colorlist[0].cspace
-
-    lenw, lenc = len(weights), len(colorlist)
-
-    if lenw < lenc:
-        weights = weights + [1 for _ in range(lenc - lenw)]
-    elif lenw > lenc:
-        weights = weights[:lenc]
-
-    sw = sum(weights)
-    weights = [w / sw for w in weights]
-
-    cls = getattr(colorlist[0], cspace).__class__
-    retp = cls()
-    propnum = len(retp)
-    alpha = 0
-
-    for c, w in zip(colorlist, weights):
-        cprop = getattr(c, cspace)
-        retp = tuple(retp[i] + cprop[i] * w for i in range(propnum))
-        alpha += c.alpha * w
-
-    return Color(cls(*retp), alpha=alpha, cspace=cspace)
-
-
-def gradient(
-    frm: "Color", to: "Color", steps: int = 10, prop: str = "hsl"
-) -> Iterator["Color"]:
-    if steps < 2:
-        raise ValueError(f"Gradient steps should be more than 1 ({steps})")
-
-    prp = "hsl" if prop == "hsl:long" else prop
-    p1, p2 = getattr(frm, prp), getattr(to, prp)
-    cls = p1.__class__
-
-    # HSL direction - short vs long
-    if prop == "hsl" and abs(p1[0] - p2[0]) > 0.5:
-        p1 = HSLTuple(p1[0] - 1.0, p1[1], p1[2])
-    elif prop == "hsl:long" and abs(p1[0] - p2[0]) < 0.5:
-        p2 = HSLTuple(p2[0] - 1.0, p2[1], p2[2])
-
-    deltac = cls(*tuple((p[1] - p[0]) / (steps - 1) for p in zip(p1, p2)))
-
-    return (frm + mul_f(deltac, i) for i in range(steps))
-
-
 # TODO
 COLORCACHE: Dict[str, Dict[str, Any]] = {}
 
@@ -204,9 +43,7 @@ def get_color(hx, cspace="rgb", container=COLORCACHE):
         container[hx] = color
 
     if cspace not in color and hasattr(convert, f"rgb2{cspace}"):
-        color[cspace] = getattr(convert, f"rgb2{cspace}")(
-            RGBTuple(*color["rgb"])
-        )
+        color[cspace] = getattr(convert, f"rgb2{cspace}")(RGBTuple(*color["rgb"]))
 
     return color
 
@@ -268,7 +105,7 @@ class ColorSpaceProperty:
         # not cached yet, check for convert function
         convertfn = getattr(convert, f"rgb2{self.name}", None)
         if convertfn:
-            privattr = convertfn(obj.rgb)
+            privattr = convertfn(obj._rgb)
             setattr(obj, self.privname, privattr)
             return privattr
 
@@ -299,6 +136,8 @@ class Color(terminal.TerminalColor):
 
     DISPLAY_HEIGHT = 12
     DISPLAY_WIDTH = 12
+    DISPLAY_BORDER = 2
+
 
     red = ColorProperty("red", "rgb")
     green = ColorProperty("green", "rgb")
@@ -350,11 +189,12 @@ class Color(terminal.TerminalColor):
 
         self._initialized = False
 
-        self._eq = equality if equality is not None else equal_hex
+        self._eq = equality if equality is not None else ops.equal_hex
 
         # from color
         if isinstance(colordef, Color):
-            self.hsl = colordef.hsl
+            self._rgb = colordef._rgb
+            self._hsl = colordef._hsl
             self.alpha = colordef.alpha
             self.cspace = colordef.cspace
 
@@ -415,7 +255,11 @@ class Color(terminal.TerminalColor):
                 self.alpha = int(colordef[4] * 2, 16) / 255
             elif len(colordef) == 9:
                 self.alpha = int(colordef[8:9], 16) / 255
-        elif colordef.startswith("rgb") or colordef.startswith("hsl") or colordef.startswith("hwb"):
+        elif (
+            colordef.startswith("rgb")
+            or colordef.startswith("hsl")
+            or colordef.startswith("hwb")
+        ):
             mode = colordef[:3]
             clr, self.alpha = self.parse_css_color_values(colordef, mode)
             setattr(self, mode, clr)
@@ -423,7 +267,7 @@ class Color(terminal.TerminalColor):
         elif colordef.startswith("gray"):
             begin = colordef.index("(")
             end = colordef.index(")")
-            cnt = colordef[begin + 1:end]
+            cnt = colordef[begin + 1 : end]
 
             cnt = re.sub(r"\s+", " ", cnt.replace("/", " ")).strip()
             values = [float(v.strip()) for v in cnt.split(" ")]
@@ -441,14 +285,16 @@ class Color(terminal.TerminalColor):
                 self.cspace = "rgb"
 
     @staticmethod
-    def parse_css_color_values(csscolordef: str, mode: str = "rgb") -> Tuple[CTuple, float]:
+    def parse_css_color_values(
+        csscolordef: str, mode: str = "rgb"
+    ) -> Tuple[CTuple, float]:
         """Parse CSS color definition
 
         https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
         """
         begin = csscolordef.index("(")
         end = csscolordef.index(")")
-        cnt = csscolordef[begin + 1:end]
+        cnt = csscolordef[begin + 1 : end]
         alpha = 1.0
 
         if "," in cnt:
@@ -541,27 +387,20 @@ class Color(terminal.TerminalColor):
     def set(self, **kwargs):
         return Color(self, **kwargs)
 
-    def lighten(self, amount=.1):
+    def lighten(self, amount=0.1):
         return self.set(lightness=self.lightness + amount)
 
-    def darken(self, amount=.1):
+    def darken(self, amount=0.1):
         return self.set(lightness=self.lightness - amount)
 
-    def saturate(self, amount=.1):
+    def saturate(self, amount=0.1):
         return self.set(saturation=self.saturation + amount)
 
-    def desaturate(self, amount=.1):
+    def desaturate(self, amount=0.1):
         return self.set(saturation=self.saturation - amount)
 
-    def rotate(self, amount=.1):
+    def rotate(self, amount=0.1):
         return self.set(hue=self.hue + amount)
-
-    def gradient(
-        self, to: "Color", steps: int = 10, cspace: str = None
-    ) -> Iterator["Color"]:
-        if cspace is None:
-            cspace = self.cspace
-        return gradient(self, to, steps, cspace)
 
     def mix(self, color: "Color", ratio: float = 0.5, cspace: str = None) -> "Color":
         if cspace is None or cspace not in COLORSPACES:
@@ -570,12 +409,11 @@ class Color(terminal.TerminalColor):
         ratio = min(abs(ratio), 1)
         prop1 = getattr(self, cspace)
         prop2 = getattr(color, cspace)
-        newprop = prop1.__class__(*tuple(v1 * (1 - ratio) + v2 * ratio for v1, v2 in zip(prop1, prop2)))
+        newprop = prop1.__class__(
+            *tuple(v1 * (1 - ratio) + v2 * ratio for v1, v2 in zip(prop1, prop2))
+        )
         alpha = self.alpha * (1 - ratio) + color.alpha * ratio
         return Color(newprop, alpha=alpha, cspace=self.cspace)
-
-    def average(self, colorlist: List["Color"], weights: List[float] = [], cspace: str = None) -> "Color":
-        return average([self] + colorlist, weights, cspace)
 
     def closest_named(self, num: int = 3) -> List["Color"]:
         # TODO return closest named colors
@@ -595,20 +433,22 @@ class Color(terminal.TerminalColor):
 
     @property
     def rgb(self):
-        return self._rgb
+        return ops.normalize_1base(self._rgb)
 
     @rgb.setter
     def rgb(self, rgb: CTuple):
         if not self._initialized:
-            self._rgb = normalize_1base(RGBTuple(*rgb))  # type: ignore
+            self._rgb = RGBTuple(*rgb)  # NOT normalized
             hue = self.hue
-            self._hsl = convert.rgb2hsl(self._rgb)
+            self._hsl = ops.normalize_huebase(convert.rgb2hsl(self._rgb))  # type: ignore
             if self._hsl.saturation == 0:
-                self._hsl = HSLTuple(
-                    hue, self._hsl.saturation, self._hsl.lightness
-                )
+                self._hsl = HSLTuple(hue, self._hsl.saturation, self._hsl.lightness)
         else:
             raise TypeError("Should not modify an existing 'Color' instance")
+
+    @property
+    def clipped(self):
+        return self.rgb != self._rgb
 
     @property
     def rgb256(self):
@@ -621,7 +461,7 @@ class Color(terminal.TerminalColor):
 
     @rgb256.setter
     def rgb256(self, rgb: CTuple):
-        self.rgb = normalize_1base(RGBTuple(*tuple(c / 255 for c in rgb)))
+        self.rgb = ops.normalize_1base(RGBTuple(*tuple(c / 255 for c in rgb)))
         self._rgb256 = rgb
 
     @property
@@ -631,7 +471,7 @@ class Color(terminal.TerminalColor):
     @hsl.setter
     def hsl(self, hsl: CTuple):
         if not self._initialized:
-            self._hsl = normalize_huebase(HSLTuple(*hsl))  # type: ignore
+            self._hsl = ops.normalize_huebase(HSLTuple(*hsl))  # type: ignore
             self._rgb = convert.hsl2rgb(self._hsl)
         else:
             raise TypeError("Should not modify an existing 'Color' instance")
@@ -690,9 +530,7 @@ class Color(terminal.TerminalColor):
             if self.alpha == 1:
                 self._cssrgb = f"rgb({rgb256.red}, {rgb256.green}, {rgb256.blue})"
             else:
-                self._cssrgb = (
-                    f"rgba({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})"
-                )
+                self._cssrgb = f"rgba({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})"
 
         return self._cssrgb
 
@@ -719,7 +557,9 @@ class Color(terminal.TerminalColor):
     def csslab(self):
         if getattr(self, "_csslab", None) is None:
             if self.alpha == 1:
-                self._csslab = f"lab({self.cie_l:.4g}% {self.cie_a:.4g} {self.cie_b:.4g})"
+                self._csslab = (
+                    f"lab({self.cie_l:.4g}% {self.cie_a:.4g} {self.cie_b:.4g})"
+                )
             else:
                 self._csslab = f"lab({self.cie_l:.4g}% {self.cie_a:.4g} {self.cie_b:.4g} / {self.alpha:.5g})"
 
@@ -761,7 +601,7 @@ class Color(terminal.TerminalColor):
 
     def __add__(self, other):
         if isinstance(other, (Color, tuple)):
-            return add(self, other)
+            return ops.add(self, other)
 
         raise TypeError(f"Cannot add '{type(other)}' to 'Color'")
 
@@ -810,9 +650,34 @@ class Color(terminal.TerminalColor):
         return f"\x1b[38;2;{rgb.red};{rgb.green};{rgb.blue}m"
 
     @property
-    def termimage(self):
-        img = [[self] * self.DISPLAY_WIDTH] * self.DISPLAY_HEIGHT
-        return terminal.draw(terminal.border(img))
+    def displayimage(self) -> List[List["Color"]]:
+        w = self.DISPLAY_WIDTH + 2 * self.DISPLAY_BORDER
+        h = self.DISPLAY_HEIGHT + 2 * self.DISPLAY_BORDER
+        b = self.DISPLAY_BORDER
+        img = []
+
+        bgcolors = getattr(self, "bgcolors", [Color(LabTuple(95, 0, 0)), Color(LabTuple(65, 0, 0))])
+        bgl = len(bgcolors)
+
+        for y in range(h):
+            line = []
+            for x in range(w):
+                bgc = bgcolors[(y + x) % bgl]
+                if x < b or y < b or x > w - b - 1 or y > w - b - 1:
+                    line.append(bgc)
+                elif y < w / 2:
+                    line.append(blend.blend(self, bgc))
+                elif x < w / 2:
+                    line.append(blend.blend(self, bgc, gamma=1))
+                else:
+                    line.append(self.set(alpha=1))
+            img.append(line)
+
+        return img
+
+    @property
+    def termimage(self) -> str:
+        return terminal.draw(self.displayimage)
 
     @property
     def info(self):
@@ -820,6 +685,7 @@ class Color(terminal.TerminalColor):
             self.lhex if self.lhex == self.name else f"{self.name} - {self.lhex}",
             self.cssrgb,
             self.csshsl,
+            self.csslab,
         ]
 
         return "\n".join(info) + "\n"

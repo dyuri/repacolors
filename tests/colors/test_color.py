@@ -1,4 +1,4 @@
-from repacolors import Color, colors, convert
+from repacolors import Color, colors, convert, ops
 import pytest
 
 
@@ -228,20 +228,20 @@ def test_create_with_extra_params():
 
 
 def test_equality():
-    c1 = Color("red", equality=colors.equal_hex)
-    c2 = Color("#ff0000", equality=colors.equal_hex)
+    c1 = Color("red", equality=ops.equal_hex)
+    c2 = Color("#ff0000", equality=ops.equal_hex)
     assert c1 == c2
 
-    c1 = Color("red", equality=colors.equal_hsl)
-    c2 = Color("#ff0000", equality=colors.equal_hsl)
+    c1 = Color("red", equality=ops.equal_hsl)
+    c2 = Color("#ff0000", equality=ops.equal_hsl)
     assert c1 == c2
 
-    c1 = Color("red", equality=colors.equal_hsla)
-    c2 = Color("#ff0000", equality=colors.equal_hsla)
+    c1 = Color("red", equality=ops.equal_hsla)
+    c2 = Color("#ff0000", equality=ops.equal_hsla)
     assert c1 == c2
 
-    c1 = Color("red", equality=colors.equal_hash)
-    c2 = Color("#ff0000", equality=colors.equal_hash)
+    c1 = Color("red", equality=ops.equal_hash)
+    c2 = Color("#ff0000", equality=ops.equal_hash)
     assert c1 == c2
 
 
@@ -251,18 +251,18 @@ def test_equality_negative():
     assert c1 != c2
     assert c1 != "#ff0000"  # not compatible type
 
-    c1 = Color("black", equality=colors.equal_hsl, hue=.6666)
-    c2 = Color("black", equality=colors.equal_hex, hue=0)
+    c1 = Color("black", equality=ops.equal_hsl, hue=.6666)
+    c2 = Color("black", equality=ops.equal_hex, hue=0)
     assert c2 == c1
     assert c1 != c2
 
-    c1 = Color("red", equality=colors.equal_hsl, alpha=.5)
-    c2 = Color("red", equality=colors.equal_hsla, alpha=1)
+    c1 = Color("red", equality=ops.equal_hsl, alpha=.5)
+    c2 = Color("red", equality=ops.equal_hsla, alpha=1)
     assert c1 == c2
     assert c2 != c1
 
-    c1 = Color("cyan", equality=colors.equal_hsl, hue=.501)
-    c2 = Color("cyan", equality=colors.equal_hash)
+    c1 = Color("cyan", equality=ops.equal_hsl, hue=.501)
+    c2 = Color("cyan", equality=ops.equal_hash)
     print(repr(c1), repr(c2))
     print(hash(c1), hash(c2))
     assert c1 == c2
@@ -375,13 +375,6 @@ def test_mix():
 
     assert r.mix(b, .25) == Color("#bf0040")
     assert r.mix(b, .75) == Color("#4000bf")
-
-
-def test_average():
-    r, g, b = Color("red"), Color("#0f0"), Color("blue")
-
-    assert r.average([g, b], [1, 2, 1]) == g.average([r, b], [2, 1, 1])
-    assert r.average([g, b], [1, 2, 1], "lab") == g.average([b, r], [2, 1, 1], "lab")
 
 
 def test_color_add():

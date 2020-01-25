@@ -96,7 +96,7 @@ def rgb2ansi(color: CTuple) -> int:
 
 
 def rgb2hex(color: CTuple, force_long: bool = False) -> str:
-    r, g, b = color
+    r, g, b = tuple(max(0, min(1, c)) for c in color)
     hx = "".join(["%02x" % int((c + .0025) * 255) for c in (r, g, b)])
 
     if not force_long and hx[0::2] == hx[1::2]:
