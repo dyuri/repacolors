@@ -2,22 +2,40 @@ from . import colors
 from .types import RGBTuple
 
 
-def _normal(fgv: float, bgv: float):
+def _normal(fgv: float, bgv: float) -> float:
     return fgv
 
 
-def _multiply(fgv: float, bgv: float):
+def _multiply(fgv: float, bgv: float) -> float:
     return fgv * bgv
+
+
+def _screen(fgv: float, bgv: float) -> float:
+    return 1 - (1 - fgv) * (1 - bgv)
+
+
+def _overlay(fgv: float, bgv: float) -> float:
+    return 2 * fgv * bgv if bgv < 0.5 else 1 - 2 * (1 - fgv) * (1 - bgv)
+
+
+def _hardlight(fgv: float, bgv: float) -> float:
+    return _overlay(bgv, fgv)
+
 
 BLEND_MODES = {
     "normal": _normal,
     "multiply": _multiply,
+    "screen": _screen,
+    "overlay": _overlay,
+    "hardlight": _hardlight,
+    "hard-light": _hardlight,
+    # TODO
 }
 
 
 def blend(fg: "colors.Color", bg: "colors.Color", mode: str = "normal", gamma: float = None) -> "colors.Color":
     if mode not in BLEND_MODES:
-        mode == "normal"
+        mode = "normal"
 
     if mode == "normal":
         if fg.alpha == 1:

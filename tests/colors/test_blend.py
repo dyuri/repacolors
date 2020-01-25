@@ -14,5 +14,6 @@ def test_blend():
     assert blend(r, w, gamma=1) == Color("#ff8080")
 
     w = w.set(alpha=.5)
-    assert blend(r, w) == Color("#ffbaba")
+    assert blend(r, w, mode="nonexisting") == Color("#ffbaba")
+    assert blend(r, w).alpha == .5
     assert blend(r, w).alpha == .5
