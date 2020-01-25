@@ -186,6 +186,12 @@ def test_create_from_csshwb():
         assert c.lhexa == "#8c998026"
 
 
+def test_create_from_cssgray():
+    assert Color("gray(50)") == Color(convert.LabTuple(50, 0, 0))
+    assert Color("gray(75 / .5)") == Color(convert.LabTuple(75, 0, 0), .5)
+    assert Color("gray(  25  /   .50 )") == Color(convert.LabTuple(25, 0, 0), .5)
+
+
 def test_create_with_extra_params():
     c = Color(rgb=(1, 0, 0), alpha=.5)
     assert c.lhex == "#ff0000"
@@ -290,10 +296,8 @@ def test_attributes():
     assert c.lhex == "#ff0000"
     assert c.hexa == "#f00a"
     assert c.lhexa == "#ff0000aa"
-    assert c.cssrgb == "rgb(255, 0, 0)"
-    assert c.cssrgba == "rgba(255, 0, 0, 0.6667)"
-    assert c.csshsl == "hsl(0, 100%, 50%)"
-    assert c.csshsla == "hsla(0, 100%, 50%, 0.6667)"
+    assert c.cssrgb == "rgba(255, 0, 0, 0.6667)"
+    assert c.csshsl == "hsla(0, 100%, 50%, 0.6667)"
     assert c.ansi == 196
     assert c.termbg == "\x1b[48;2;255;0;0m"
     assert c.termfg == "\x1b[38;2;255;0;0m"

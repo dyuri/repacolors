@@ -33,11 +33,11 @@ def equal_hex(c1: "Color", c2: "Color") -> bool:
 
 
 def equal_hsl(c1: "Color", c2: "Color") -> bool:
-    return c1.csshsl == c2.csshsl
+    return Color(c1, 1).csshsl == Color(c2, 1).csshsl
 
 
 def equal_hsla(c1: "Color", c2: "Color") -> bool:
-    return c1.csshsla == c2.csshsla
+    return c1.csshsl == c2.csshsl
 
 
 def equal_hash(c1: "Color", c2: "Color") -> bool:
@@ -339,13 +339,13 @@ class Color(terminal.TerminalColor):
     def __init__(
         self,
         colordef: Any = None,
-        alpha: float = 1,
+        alpha: float = None,
         equality: Optional[Callable[["Color", "Color"], bool]] = None,
         **kwargs,
     ):
         self._hsl = HSLTuple(0, 0, 0)
         self._rgb = RGBTuple(0, 0, 0)
-        self._alpha = alpha
+        self._alpha = 1.0
         self.cspace = "hsl"
 
         self._initialized = False
@@ -369,6 +369,10 @@ class Color(terminal.TerminalColor):
         # from str
         elif isinstance(colordef, str):
             self._init_str(colordef)
+
+        # override alpha
+        if alpha is not None:
+            self._alpha = alpha
 
         # additional parameters
         for k, v in kwargs.items():
@@ -416,6 +420,16 @@ class Color(terminal.TerminalColor):
             clr, self.alpha = self.parse_css_color_values(colordef, mode)
             setattr(self, mode, clr)
             self.cspace = mode
+        elif colordef.startswith("gray"):
+            begin = colordef.index("(")
+            end = colordef.index(")")
+            cnt = colordef[begin + 1:end]
+
+            cnt = re.sub(r"\s+", " ", cnt.replace("/", " ")).strip()
+            values = [float(v.strip()) for v in cnt.split(" ")]
+
+            self.lab = LabTuple(values[0], 0, 0)
+            self.alpha = values[1] if len(values) > 1 else 1.0
         else:
             hx = name2hex(colordef)
             if hx:
@@ -438,10 +452,10 @@ class Color(terminal.TerminalColor):
         alpha = 1.0
 
         if "," in cnt:
-            cnt = re.sub(r"\s+", " ", cnt)
+            cnt = re.sub(r"\s+", " ", cnt).strip()
             values = [v.strip() for v in cnt.split(",")]
         else:
-            cnt = cnt.replace("/", " ")
+            cnt = cnt.replace("/", " ").strip()
             cnt = re.sub(r"\s+", " ", cnt)
             values = [v.strip() for v in cnt.split(" ")]
 
@@ -673,41 +687,53 @@ class Color(terminal.TerminalColor):
     def cssrgb(self):
         if getattr(self, "_cssrgb", None) is None:
             rgb256 = self.rgb256
-            self._cssrgb = f"rgb({rgb256.red}, {rgb256.green}, {rgb256.blue})"
-        return self._cssrgb
+            if self.alpha == 1:
+                self._cssrgb = f"rgb({rgb256.red}, {rgb256.green}, {rgb256.blue})"
+            else:
+                self._cssrgb = (
+                    f"rgba({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})"
+                )
 
-    @property
-    def cssrgba(self):
-        if getattr(self, "_cssrgba", None) is None:
-            rgb256 = self.rgb256
-            self._cssrgba = (
-                f"rgba({rgb256.red}, {rgb256.green}, {rgb256.blue}, {self.alpha:.5g})"
-            )
-        return self._cssrgba
+        return self._cssrgb
 
     @property
     def csshsl(self):
         if getattr(self, "_csshsl", None) is None:
-            self._csshsl = f"hsl({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%)"
+            if self.alpha == 1:
+                self._csshsl = f"hsl({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%)"
+            else:
+                self._csshsl = f"hsla({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%, {self.alpha:.5g})"
         return self._csshsl
-
-    @property
-    def csshsla(self):
-        if getattr(self, "_csshsla", None) is None:
-            self._csshsla = f"hsla({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%, {self.alpha:.5g})"
-        return self._csshsla
 
     @property
     def csshwb(self):
         if getattr(self, "_csshwb", None) is None:
-            self._csshwb = f"hwb({int(360 * self.hue)}, {(100 * self.whiteness):.4g}%, {(100 * self.blackness):.4g}%)"
+            if self.alpha == 1:
+                self._csshwb = f"hwb({int(360 * self.hue)}deg {(100 * self.whiteness):.4g}% {(100 * self.blackness):.4g}%)"
+            else:
+                self._csshwb = f"hwb({int(360 * self.hue)}deg {(100 * self.whiteness):.4g}% {(100 * self.blackness):.4g}% / {self.alpha:.5g})"
+
         return self._csshwb
 
     @property
-    def csshwba(self):
-        if getattr(self, "_csshwba", None) is None:
-            self._csshwba = f"hwb({int(360 * self.hue)}, {(100 * self.whiteness):.4g}%, {(100 * self.blackness):.4g}%, {self.alpha:.5g})"
-        return self._csshwba
+    def csslab(self):
+        if getattr(self, "_csslab", None) is None:
+            if self.alpha == 1:
+                self._csslab = f"lab({self.cie_l:.4g}% {self.cie_a:.4g} {self.cie_b:.4g})"
+            else:
+                self._csslab = f"lab({self.cie_l:.4g}% {self.cie_a:.4g} {self.cie_b:.4g} / {self.alpha:.5g})"
+
+        return self._csslab
+
+    @property
+    def csslch(self):
+        if getattr(self, "_csslch", None) is None:
+            if self.alpha == 1:
+                self._csslch = f"lch({self.cie_l:.4g}% {self.cie_c:.4g} {int(360 * self.cie_h)}deg)"
+            else:
+                self._csslch = f"lch({self.cie_l:.4g}% {self.cie_c:.4g} {int(360 * self.cie_h)}deg / {self.alpha:.5g})"
+
+        return self._csslch
 
     @property
     def alpha(self):
@@ -725,7 +751,7 @@ class Color(terminal.TerminalColor):
         return self.hex
 
     def __repr__(self):
-        return f"<Color {self.name} - {self.csshsla}>"
+        return f"<Color {self.name} - {self.csshsl}>"
 
     def __eq__(self, other):
         if isinstance(other, Color):
@@ -792,8 +818,8 @@ class Color(terminal.TerminalColor):
     def info(self):
         info = [
             self.lhex if self.lhex == self.name else f"{self.name} - {self.lhex}",
-            self.cssrgb if self.alpha == 1 else self.cssrgba,
-            self.csshsl if self.alpha == 1 else self.csshsla,
+            self.cssrgb,
+            self.csshsl,
         ]
 
         return "\n".join(info) + "\n"
