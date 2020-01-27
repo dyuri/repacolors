@@ -193,8 +193,8 @@ class Color(terminal.TerminalColor):
 
         # from color
         if isinstance(colordef, Color):
-            self._rgb = colordef._rgb
             self._hsl = colordef._hsl
+            self.rgb = colordef._rgb
             self.alpha = colordef.alpha
             self.cspace = colordef.cspace
 
@@ -254,7 +254,7 @@ class Color(terminal.TerminalColor):
             if len(colordef) == 5:
                 self.alpha = int(colordef[4] * 2, 16) / 255
             elif len(colordef) == 9:
-                self.alpha = int(colordef[8:9], 16) / 255
+                self.alpha = int(colordef[7:9], 16) / 255
         elif (
             colordef.startswith("rgb")
             or colordef.startswith("hsl")
@@ -387,20 +387,20 @@ class Color(terminal.TerminalColor):
     def set(self, **kwargs):
         return Color(self, **kwargs)
 
-    def lighten(self, amount=0.1):
-        return self.set(lightness=self.lightness + amount)
+    def lighten(self, amount=10):
+        return self.set(cie_l=self.cie_l + amount)
 
-    def darken(self, amount=0.1):
-        return self.set(lightness=self.lightness - amount)
+    def darken(self, amount=10):
+        return self.set(cie_l=self.cie_l - amount)
 
-    def saturate(self, amount=0.1):
-        return self.set(saturation=self.saturation + amount)
+    def saturate(self, amount=10):
+        return self.set(cie_c=self.cie_c + amount)
 
-    def desaturate(self, amount=0.1):
-        return self.set(saturation=self.saturation - amount)
+    def desaturate(self, amount=10):
+        return self.set(cie_c=self.cie_c - amount)
 
     def rotate(self, amount=0.1):
-        return self.set(hue=self.hue + amount)
+        return self.set(cie_h=self.cie_h + amount)
 
     def mix(self, color: "Color", ratio: float = 0.5, cspace: str = None) -> "Color":
         if cspace is None or cspace not in COLORSPACES:
@@ -440,7 +440,7 @@ class Color(terminal.TerminalColor):
         if not self._initialized:
             self._rgb = RGBTuple(*rgb)  # NOT normalized
             hue = self.hue
-            self._hsl = ops.normalize_huebase(convert.rgb2hsl(self._rgb))  # type: ignore
+            self._hsl = ops.normalize_huebase(convert.rgb2hsl(ops.normalize_1base(self._rgb)))  # type: ignore
             if self._hsl.saturation == 0:
                 self._hsl = HSLTuple(hue, self._hsl.saturation, self._hsl.lightness)
         else:

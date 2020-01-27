@@ -92,7 +92,7 @@ def test_create_from_str():
 
     c = Color("#ff000080")
     assert c.lhex == "#ff0000"
-    assert c.alpha - .5 < 0.00001
+    assert 0.49 < c.alpha < 0.51
 
     c = Color("red")
     assert c.lhex == "#ff0000"
