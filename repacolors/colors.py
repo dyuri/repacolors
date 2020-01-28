@@ -649,21 +649,28 @@ class Color(terminal.TerminalColor):
         rgb = self.rgb256
         return f"\x1b[38;2;{rgb.red};{rgb.green};{rgb.blue}m"
 
-    @property
-    def displayimage(self) -> List[List["Color"]]:
-        w = self.DISPLAY_WIDTH + 2 * self.DISPLAY_BORDER
-        h = self.DISPLAY_HEIGHT + 2 * self.DISPLAY_BORDER
-        b = self.DISPLAY_BORDER
+    def _displayimage(self, width: int = None, height: int = None, border: int = None, bgcolors: List["Color"] = None) -> List[List["Color"]]:
+        if width is None:
+            width = self.DISPLAY_WIDTH
+        if height is None:
+            height = self.DISPLAY_HEIGHT
+        if border is None:
+            border = self.DISPLAY_BORDER
+
+        w = width + 2 * border
+        h = height + 2 * border
         img = []
 
-        bgcolors = getattr(self, "bgcolors", [Color(LabTuple(95, 0, 0)), Color(LabTuple(65, 0, 0))])
+        if bgcolors is None:
+            bgcolors = getattr(self, "bgcolors", [Color(LabTuple(95, 0, 0)), Color(LabTuple(65, 0, 0))])
+
         bgl = len(bgcolors)
 
         for y in range(h):
             line = []
             for x in range(w):
                 bgc = bgcolors[(y + x) % bgl]
-                if x < b or y < b or x > w - b - 1 or y > w - b - 1:
+                if x < border or y < border or x > w - border - 1 or y > h - border - 1:
                     line.append(bgc)
                 elif y < w / 2:
                     line.append(blend.blend(self, bgc))
@@ -674,6 +681,10 @@ class Color(terminal.TerminalColor):
             img.append(line)
 
         return img
+
+    @property
+    def displayimage(self) -> List[List["Color"]]:
+        return self._displayimage()
 
     @property
     def termimage(self) -> str:
