@@ -5,6 +5,26 @@ from typing import List
 from . import terminal
 
 
+def project_domain(pos: float, domain: List[float]) -> float:
+    """Project position of `pos` in `domain` into [0, 1] range
+    """
+
+    if pos <= domain[0]:
+        return 0
+    if pos >= domain[-1]:
+        return 1
+
+    lend = len(domain)
+    prev = (0.0, 0.0)
+    for posx, domx in enumerate(domain):
+        curr = (posx / (lend - 1), domx)
+        if pos <= domx:
+            break
+        prev = curr
+
+    return (pos - prev[1]) / (curr[1] - prev[1]) * (curr[0] - prev[0]) + prev[0]
+
+
 class ColorScale():
     """Maps numeric values to a color palette
     """
@@ -13,17 +33,29 @@ class ColorScale():
     DISPLAY_HEIGHT = 4
     DISPLAY_WIDTH = 20
 
-    def __init__(self, colors: List[Color] = [Color("#ffffff"), Color("#000000")], cspace: str = "lab"):
+    def __init__(self, colors: List[Color] = [Color("#ffffff"), Color("#000000")], domain: List[float] = None, cspace: str = "lab"):
         self.colors = colors
         self.cspace = cspace
+        self.domain: List[float] = [0, 1] if domain is None else domain
 
     def __getitem__(self, key):
         if isinstance(key, (float, int)):
-            return self._get_color_from_pos(key)
+            return self._get_color_for_pos(key)
 
-    def _get_color_from_pos(self, pos: float) -> Color:
-        # TODO
-        return self.colors[0].mix(self.colors[1], ratio=pos, cspace=self.cspace)
+    def _get_color_for_pos(self, pos: float) -> Color:
+        projpos = project_domain(pos, self.domain)
+
+        if projpos == 0:
+            return self.colors[0]
+        elif projpos == 1:
+            return self.colors[-1]
+
+        lenc = len(self.colors)
+        idx = int(projpos * (lenc - 1))
+
+        col1, col2 = self.colors[idx:idx+2]
+        ratio = (projpos - idx / (lenc - 1)) * (lenc - 1)
+        return col1.mix(col2, ratio=ratio, cspace=self.cspace)
 
     def _displayimage(self, width: int = None, height: int = None, border: int = None, bgcolors: List["Color"] = None) -> List[List["Color"]]:
         if width is None:
