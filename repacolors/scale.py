@@ -81,7 +81,7 @@ class ColorScale():
                 if x < border or y < border or x > w - border - 1 or y > h - border - 1:
                     line.append(bgc)
                 else:
-                    line.append(blend(self[(x - border) / width], bgc))
+                    line.append(blend(self[self.domain[0] + self.domain[-1] * (x - border) / width], bgc))
 
             img.append(line)
 
