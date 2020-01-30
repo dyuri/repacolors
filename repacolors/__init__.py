@@ -1,5 +1,4 @@
-from . import colors
+from .colors import Color
+from .scale import ColorScale
 
-Color = colors.Color
-
-__all__ = ["Color"]
+__version__ = "0.3.0"

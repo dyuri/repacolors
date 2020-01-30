@@ -1,7 +1,7 @@
 from .colors import Color
 from .types import LabTuple
 from .blend import blend
-from typing import List
+from typing import List, Any
 from . import terminal
 
 
@@ -33,10 +33,13 @@ class ColorScale():
     DISPLAY_HEIGHT = 4
     DISPLAY_WIDTH = 20
 
-    def __init__(self, colors: List[Color] = [Color("#ffffff"), Color("#000000")], domain: List[float] = None, cspace: str = "lab"):
-        self.colors = colors
-        self.cspace = cspace
+    def __init__(self, colors: List[Any] = [Color("#ffffff"), Color("#000000")], domain: List[float] = None, gamma: float = 1.0, cspace: str = "lab"):
+
+        # convert 'colors' to list of Colors
+        self.colors = [c if isinstance(c, Color) else Color(c) for c in colors]
         self.domain: List[float] = [0, 1] if domain is None else domain
+        self.gamma = gamma
+        self.cspace = cspace
 
     def __getitem__(self, key):
         if isinstance(key, (float, int)):
@@ -44,6 +47,9 @@ class ColorScale():
 
     def _get_color_for_pos(self, pos: float) -> Color:
         projpos = project_domain(pos, self.domain)
+
+        if self.gamma != 1.0:
+            projpos = projpos ** self.gamma
 
         if projpos == 0:
             return self.colors[0]
