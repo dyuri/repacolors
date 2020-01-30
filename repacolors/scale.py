@@ -9,10 +9,16 @@ def project_domain(pos: float, domain: List[float]) -> float:
     """Project position of `pos` in `domain` into [0, 1] range
     """
 
+    reverse = False
+    if domain[0] > domain[-1]:
+        # reverse
+        domain = list(reversed(domain))
+        reverse = True
+
     if pos <= domain[0]:
-        return 0
+        return 0 if not reverse else 1
     if pos >= domain[-1]:
-        return 1
+        return 1 if not reverse else 0
 
     lend = len(domain)
     prev = (0.0, 0.0)
@@ -22,7 +28,9 @@ def project_domain(pos: float, domain: List[float]) -> float:
             break
         prev = curr
 
-    return (pos - prev[1]) / (curr[1] - prev[1]) * (curr[0] - prev[0]) + prev[0]
+    value = (pos - prev[1]) / (curr[1] - prev[1]) * (curr[0] - prev[0]) + prev[0]
+
+    return value if not reverse else 1 - value
 
 
 class ColorScale():
@@ -41,6 +49,13 @@ class ColorScale():
         self.gamma = gamma
         self.cspace = cspace
 
+    @property
+    def reversed(self):
+        return self.domain[0] > self.domain[-1]
+
+    def reverse(self):
+        self.domain.reverse()
+
     def __getitem__(self, key):
         if isinstance(key, (float, int)):
             return self._get_color_for_pos(key)
@@ -52,15 +67,20 @@ class ColorScale():
             projpos = projpos ** self.gamma
 
         if projpos == 0:
-            return self.colors[0]
+            return self.colors[0] if not self.reversed else self.colors[-1]
         elif projpos == 1:
-            return self.colors[-1]
+            return self.colors[-1] if not self.reversed else self.colors[0]
 
         lenc = len(self.colors)
-        idx = int(projpos * (lenc - 1))
+        if not self.reversed:
+            idx = int(projpos * (lenc - 1))
+            col1, col2 = self.colors[idx:idx+2]
+            ratio = (projpos - idx / (lenc - 1)) * (lenc - 1)
+        else:
+            idx = lenc - int(projpos * (lenc - 1)) - 2
+            col1, col2 = self.colors[idx:idx+2]
+            ratio = (1 - projpos - idx / (lenc - 1)) * (lenc - 1)
 
-        col1, col2 = self.colors[idx:idx+2]
-        ratio = (projpos - idx / (lenc - 1)) * (lenc - 1)
         return col1.mix(col2, ratio=ratio, cspace=self.cspace)
 
     def _displayimage(self, width: int = None, height: int = None, border: int = None, bgcolors: List["Color"] = None) -> List[List["Color"]]:
@@ -87,7 +107,7 @@ class ColorScale():
                 if x < border or y < border or x > w - border - 1 or y > h - border - 1:
                     line.append(bgc)
                 else:
-                    line.append(blend(self[self.domain[0] + self.domain[-1] * (x - border) / width], bgc))
+                    line.append(blend(self[self.domain[0] + (self.domain[-1] - self.domain[0]) * (x - border) / width], bgc))
 
             img.append(line)
 
