@@ -409,6 +409,7 @@ class Color(terminal.TerminalColor):
         ratio = min(abs(ratio), 1)
         prop1 = getattr(self, cspace)
         prop2 = getattr(color, cspace)
+        # TODO proper hue handling (shortest path)
         newprop = prop1.__class__(
             *tuple(v1 * (1 - ratio) + v2 * ratio for v1, v2 in zip(prop1, prop2))
         )

@@ -7,11 +7,15 @@ PALETTES = {
 }
 
 
-def get_scale(name: str, *args, **kwargs) -> ColorScale:
+def get_palette(name: str):
     if name.lower() not in PALETTES:
         raise KeyError(f"'{name}' palette not found")
 
-    return ColorScale(PALETTES[name.lower()], *args, **kwargs)
+    return PALETTES[name.lower()]
+
+
+def get_scale(name: str, *args, **kwargs) -> ColorScale:
+    return ColorScale(get_palette(name), *args, **kwargs)
 
 
 def demo(width: int = 80):
