@@ -371,10 +371,13 @@ def test_mix():
     assert rbrgb.blue > r.blue
     assert rbrgb.blue < b.blue
 
-    assert r.mix(b, cspace="hsl") == g
+    assert r.mix(b, cspace="hsl") == Color("#ff00ff")
+    assert b.mix(r, cspace="hsl") == Color("#ff00ff")
 
     assert r.mix(b, .25) == Color("#bf0040")
     assert r.mix(b, .75) == Color("#4000bf")
+
+    assert r.mix(g, gamma=2.2) == Color("#baba00")
 
 
 def test_color_add():

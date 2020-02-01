@@ -1,7 +1,7 @@
 """Named tuples for color spaces
 """
 
-from typing import Tuple, NamedTuple
+from typing import Tuple, NamedTuple, Optional
 
 CTuple = Tuple[float, ...]
 
@@ -72,3 +72,9 @@ COLORSPACES = {
     "yuv": YUVTuple,
     "cmyk": CMYKTuple,
 }
+
+
+def hueprop(cspace: str) -> Optional[int]:
+    if 'h' in cspace:
+        return cspace.index('h')
+    return None

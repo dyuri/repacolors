@@ -138,7 +138,6 @@ class Color(terminal.TerminalColor):
     DISPLAY_WIDTH = 12
     DISPLAY_BORDER = 2
 
-
     red = ColorProperty("red", "rgb")
     green = ColorProperty("green", "rgb")
     blue = ColorProperty("blue", "rgb")
@@ -402,16 +401,24 @@ class Color(terminal.TerminalColor):
     def rotate(self, amount=0.1):
         return self.set(cie_h=self.cie_h + amount)
 
-    def mix(self, color: "Color", ratio: float = 0.5, cspace: str = None) -> "Color":
+    def mix(self, color: "Color", ratio: float = 0.5, cspace: str = None, gamma: float = None) -> "Color":
         if cspace is None or cspace not in COLORSPACES:
             cspace = self.cspace
 
+        if gamma is None:
+            gamma = 1.0
+
         ratio = min(abs(ratio), 1)
-        prop1 = getattr(self, cspace)
-        prop2 = getattr(color, cspace)
-        # TODO proper hue handling (shortest path)
+        prop1, prop2 = getattr(self, cspace), getattr(color, cspace)
+
+        huep = hueprop(cspace)
         newprop = prop1.__class__(
-            *tuple(v1 * (1 - ratio) + v2 * ratio for v1, v2 in zip(prop1, prop2))
+            *tuple(
+                ops.mix_linear(v1, v2, ratio, gamma)
+                if idx != huep
+                else ops.mix_hue(v1, v2, ratio, gamma)
+                for v1, v2, idx in zip(prop1, prop2, range(len(prop1)))
+            )
         )
         alpha = self.alpha * (1 - ratio) + color.alpha * ratio
         return Color(newprop, alpha=alpha, cspace=self.cspace)
@@ -650,7 +657,13 @@ class Color(terminal.TerminalColor):
         rgb = self.rgb256
         return f"\x1b[38;2;{rgb.red};{rgb.green};{rgb.blue}m"
 
-    def _displayimage(self, width: int = None, height: int = None, border: int = None, bgcolors: List["Color"] = None) -> List[List["Color"]]:
+    def _displayimage(
+        self,
+        width: int = None,
+        height: int = None,
+        border: int = None,
+        bgcolors: List["Color"] = None,
+    ) -> List[List["Color"]]:
         if width is None:
             width = self.DISPLAY_WIDTH
         if height is None:
@@ -663,7 +676,9 @@ class Color(terminal.TerminalColor):
         img = []
 
         if bgcolors is None:
-            bgcolors = getattr(self, "bgcolors", [Color(LabTuple(95, 0, 0)), Color(LabTuple(65, 0, 0))])
+            bgcolors = getattr(
+                self, "bgcolors", [Color(LabTuple(95, 0, 0)), Color(LabTuple(65, 0, 0))]
+            )
 
         bgl = len(bgcolors)
 

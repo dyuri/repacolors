@@ -70,12 +70,12 @@ def normalize(color: CTuple, cspace: str = None) -> CTuple:
     # TODO hsv, hwb
     if cspace in ["rgb", "yuv", "xyz", "cmyk"]:
         return normalize_1base(color)
-    elif cspace in ["hsl", "hsv", "hwb"]:
-        return normalize_huebase(color)
     elif cspace == "lab":
         return normalize_lab(color)
     elif cspace == "lch":
         return normalize_lch(color)
+    elif hueprop(cspace) == 0:
+        return normalize_huebase(color)
 
     return color
 
@@ -99,6 +99,22 @@ def mul(color1: "colors.Color", color2: Union["colors.Color", CTuple], cspace: s
 
     ctup = normalize(cls(*tuple(p1 * p2 for p1, p2 in zip(ctup1, ctup2))))
     return colors.Color(ctup)
+
+
+def mix_linear(v1: float, v2: float, ratio: float = .5, gamma: float = 1):
+    if gamma == 1:
+        return (1 - ratio) * v1 + ratio * v2
+    return ((1 - ratio) * v1 ** gamma + ratio * v2 ** gamma) ** (1 / gamma)
+
+
+def mix_hue(v1: float, v2: float, ratio: float = .5, gamma: float = 1):
+    if abs(v1 - v2) > .5:
+        if v1 < v2:
+            v1 += 1
+        else:
+            v2 += 1
+
+    return mix_linear(v1, v2, ratio, gamma) % 1
 
 
 def add(color1: "colors.Color", color2: Union["colors.Color", CTuple], cspace: str = None) -> "colors.Color":
@@ -148,25 +164,3 @@ def average(
         alpha += c.alpha * w
 
     return colors.Color(cls(*retp), alpha=alpha, cspace=cspace)
-
-
-# TODO -> scale
-def gradient(
-    frm: "colors.Color", to: "colors.Color", steps: int = 10, prop: str = "hsl"
-) -> Iterator["colors.Color"]:
-    if steps < 2:
-        raise ValueError(f"Gradient steps should be more than 1 ({steps})")
-
-    prp = "hsl" if prop == "hsl:long" else prop
-    p1, p2 = getattr(frm, prp), getattr(to, prp)
-    cls = p1.__class__
-
-    # HSL direction - short vs long
-    if prop == "hsl" and abs(p1[0] - p2[0]) > 0.5:
-        p1 = HSLTuple(p1[0] - 1.0, p1[1], p1[2])
-    elif prop == "hsl:long" and abs(p1[0] - p2[0]) < 0.5:
-        p2 = HSLTuple(p2[0] - 1.0, p2[1], p2[2])
-
-    deltac = cls(*tuple((p[1] - p[0]) / (steps - 1) for p in zip(p1, p2)))
-
-    return (frm + mul_f(deltac, i) for i in range(steps))

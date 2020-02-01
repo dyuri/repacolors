@@ -3,7 +3,7 @@ import sys
 
 
 MAX_ITER = 1000
-CHARS = " `'.,~:;/oaOHS$0@#"
+CHARS = " `.',:;clodxkO0KXNWM@#"
 
 
 def mandel(x, y):

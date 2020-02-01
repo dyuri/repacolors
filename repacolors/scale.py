@@ -41,13 +41,21 @@ class ColorScale():
     DISPLAY_HEIGHT = 4
     DISPLAY_WIDTH = 20
 
-    def __init__(self, colors: List[Any] = [Color("#ffffff"), Color("#000000")], domain: List[float] = None, gamma: float = 1.0, cspace: str = "lab"):
+    def __init__(self, colors: List[Any] = [Color("#ffffff"), Color("#000000")], domain: List[float] = None, gamma: float = 1.0, cspace: str = "lab", gamma_correction: float = None):
 
         # convert 'colors' to list of Colors
         self.colors = [c if isinstance(c, Color) else Color(c) for c in colors]
         self.domain: List[float] = [0, 1] if domain is None else domain
         self.gamma = gamma
         self.cspace = cspace
+
+        if gamma_correction is None:
+            if cspace in ["rgb", "hsl", "hsv", "hwb"]:
+                gamma_correction = 2.2
+            else:
+                gamma_correction = 1.0
+
+        self.gamma_correction = gamma_correction
 
     @property
     def reversed(self):
@@ -81,7 +89,7 @@ class ColorScale():
             col1, col2 = self.colors[idx:idx+2]
             ratio = (1 - projpos - idx / (lenc - 1)) * (lenc - 1)
 
-        return col1.mix(col2, ratio=ratio, cspace=self.cspace)
+        return col1.mix(col2, ratio=ratio, cspace=self.cspace, gamma=self.gamma_correction)
 
     def _displayimage(self, width: int = None, height: int = None, border: int = None, bgcolors: List["Color"] = None) -> List[List["Color"]]:
         if width is None:
