@@ -1,8 +1,56 @@
 from .colors import Color
 from .types import LabTuple
 from .blend import blend
-from typing import List, Any
+from typing import List, Any, Tuple, Callable
 from . import terminal
+import math
+
+
+def _binomial(i: int, n: int) -> float:
+    """Binomial coefficient
+    """
+    return math.factorial(n) / float(math.factorial(i) * math.factorial(n - i))
+
+
+def _bernstein(t: float, i: int, n: int) -> float:
+    """Bernstein polynom
+    """
+    return _binomial(i, n) * (t ** i) * ((1 - t) ** (n - i))
+
+
+def _bezier(
+    points: List[Tuple[float, ...]], t: float, gamma: float = 1.0
+) -> Tuple[float, ...]:
+    """Calculate coordinate of a point in the bezier curve
+    """
+    n = len(points) - 1
+    val = [0.0 for _ in range(len(points[0]))]
+    for i, pos in enumerate(points):
+        bern = _bernstein(t, i, n)
+        val = [v + (p * bern) ** gamma for v, p in zip(val, pos)]
+
+    return tuple(val)
+
+
+def bezier_ip(
+    colors: List[Color], pos: float = 0.5, cspace: str = "lab", gamma: float = 1.0
+) -> Color:
+    ctup = _bezier([getattr(c, cspace) + (c.alpha,) for c in colors], pos, gamma)
+    cargs = {cspace: ctup[:-1], "alpha": ctup[-1]}
+
+    return Color(**cargs)  # type: ignore
+
+
+def linear_ip(
+    colors: List[Color], pos: float = 0.5, cspace: str = "lab", gamma: float = 1.0
+) -> Color:
+
+    lenc = len(colors)
+    idx = int(pos * (lenc - 1))
+    col1, col2 = colors[idx : idx + 2]
+    ratio = (pos - idx / (lenc - 1)) * (lenc - 1)
+
+    return col1.mix(col2, ratio=ratio, cspace=cspace, gamma=gamma)
 
 
 def project_domain(pos: float, domain: List[float]) -> float:
@@ -33,24 +81,40 @@ def project_domain(pos: float, domain: List[float]) -> float:
     return value if not reverse else 1 - value
 
 
-class ColorScale():
+class ColorScale:
     """Maps numeric values to a color palette
     """
 
     DISPLAY_BORDER = 1
     DISPLAY_HEIGHT = 4
     DISPLAY_WIDTH = 20
+    INTERPOLATORS = {
+        "linear": linear_ip,
+        "bezier": bezier_ip,
+    }
 
-    def __init__(self, colors: List[Any] = [Color("#ffffff"), Color("#000000")], domain: List[float] = None, gamma: float = 1.0, cspace: str = "lab", gamma_correction: float = None):
+    def __init__(
+        self,
+        colors: List[Any] = [Color("#ffffff"), Color("#000000")],
+        domain: List[float] = None,
+        gamma: float = 1.0,
+        cspace: str = "lab",
+        gamma_correction: float = None,
+        interpolator: str = "linear",
+    ):
 
         # convert 'colors' to list of Colors
         self.colors = [c if isinstance(c, Color) else Color(c) for c in colors]
         self.domain: List[float] = [0, 1] if domain is None else domain
         self.gamma = gamma
         self.cspace = cspace
+        self.interpolator = self.INTERPOLATORS.get(interpolator, linear_ip)
 
         if gamma_correction is None:
-            if cspace in ["rgb", "hsl", "hsv", "hwb"]:
+            if (
+                cspace in ["rgb", "hsl", "hsv", "hwb"]
+                and self.interpolator != bezier_ip
+            ):
                 gamma_correction = 2.2
             else:
                 gamma_correction = 1.0
@@ -74,24 +138,24 @@ class ColorScale():
         if self.gamma != 1.0:
             projpos = projpos ** self.gamma
 
+        colors = self.colors if not self.reversed else list(reversed(self.colors))
+
         if projpos == 0:
-            return self.colors[0] if not self.reversed else self.colors[-1]
-        elif projpos == 1:
-            return self.colors[-1] if not self.reversed else self.colors[0]
+            return colors[0]
+        if projpos == 1:
+            return colors[-1]
 
-        lenc = len(self.colors)
-        if not self.reversed:
-            idx = int(projpos * (lenc - 1))
-            col1, col2 = self.colors[idx:idx+2]
-            ratio = (projpos - idx / (lenc - 1)) * (lenc - 1)
-        else:
-            idx = lenc - int(projpos * (lenc - 1)) - 2
-            col1, col2 = self.colors[idx:idx+2]
-            ratio = (1 - projpos - idx / (lenc - 1)) * (lenc - 1)
+        return Color(
+            self.interpolator(self.colors, pos, self.cspace, self.gamma_correction)
+        )
 
-        return col1.mix(col2, ratio=ratio, cspace=self.cspace, gamma=self.gamma_correction)
-
-    def _displayimage(self, width: int = None, height: int = None, border: int = None, bgcolors: List["Color"] = None) -> List[List["Color"]]:
+    def _displayimage(
+        self,
+        width: int = None,
+        height: int = None,
+        border: int = None,
+        bgcolors: List["Color"] = None,
+    ) -> List[List["Color"]]:
         if width is None:
             width = self.DISPLAY_WIDTH
         if height is None:
@@ -104,7 +168,9 @@ class ColorScale():
         img = []
 
         if bgcolors is None:
-            bgcolors = getattr(self, "bgcolors", [Color(LabTuple(95, 0, 0)), Color(LabTuple(65, 0, 0))])
+            bgcolors = getattr(
+                self, "bgcolors", [Color(LabTuple(95, 0, 0)), Color(LabTuple(65, 0, 0))]
+            )
 
         bgl = len(bgcolors)
 
@@ -115,7 +181,17 @@ class ColorScale():
                 if x < border or y < border or x > w - border - 1 or y > h - border - 1:
                     line.append(bgc)
                 else:
-                    line.append(blend(self[self.domain[0] + (self.domain[-1] - self.domain[0]) * (x - border) / width], bgc))
+                    line.append(
+                        blend(
+                            self[
+                                self.domain[0]
+                                + (self.domain[-1] - self.domain[0])
+                                * (x - border)
+                                / width
+                            ],
+                            bgc,
+                        )
+                    )
 
             img.append(line)
 
@@ -129,5 +205,11 @@ class ColorScale():
     def termimage(self) -> str:
         return terminal.draw(self.displayimage)
 
-    def print(self, width: int = None, height: int = None, border: int = None, bgcolors: List["Color"] = None):
+    def print(
+        self,
+        width: int = None,
+        height: int = None,
+        border: int = None,
+        bgcolors: List["Color"] = None,
+    ):
         print(terminal.draw(self._displayimage(width, height, border, bgcolors)))
