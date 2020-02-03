@@ -35,8 +35,9 @@ def _bezier(
 def bezier_ip(
     colors: List[Color], pos: float = 0.5, cspace: str = "lab", gamma: float = 1.0
 ) -> Color:
-    ctup = _bezier([getattr(c, cspace) + (c.alpha,) for c in colors], pos, gamma)
-    cargs = {cspace: ctup[:-1], "alpha": ctup[-1]}
+    ctup = _bezier([getattr(c, cspace) for c in colors], pos, gamma)
+    alpha = _bezier([(c.alpha,) for c in colors], pos)[0]
+    cargs = {cspace: ctup, "alpha": min(1.0, alpha)}
 
     return Color(**cargs)  # type: ignore
 
@@ -146,7 +147,7 @@ class ColorScale:
             return colors[-1]
 
         return Color(
-            self.interpolator(self.colors, pos, self.cspace, self.gamma_correction)
+            self.interpolator(self.colors, projpos, self.cspace, self.gamma_correction)
         )
 
     def _displayimage(
