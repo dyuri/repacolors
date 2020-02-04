@@ -401,6 +401,9 @@ class Color(terminal.TerminalColor):
     def rotate(self, amount=0.1):
         return self.set(cie_h=self.cie_h + amount)
 
+    def gray(self):
+        return Color(LabTuple(self.cie_l, 0, 0))
+
     def mix(self, color: "Color", ratio: float = 0.5, cspace: str = None, gamma: float = None) -> "Color":
         if cspace is None or cspace not in COLORSPACES:
             cspace = self.cspace
@@ -545,41 +548,48 @@ class Color(terminal.TerminalColor):
     @property
     def csshsl(self):
         if getattr(self, "_csshsl", None) is None:
+            sat = int(self.saturation * 1000) / 10
+            lig = int(self.lightness * 1000) / 10
             if self.alpha == 1:
-                self._csshsl = f"hsl({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%)"
+                self._csshsl = f"hsl({int(360 * self.hue)}, {sat:.4g}%, {lig:.4g}%)"
             else:
-                self._csshsl = f"hsla({int(360 * self.hue)}, {(100 * self.saturation):.4g}%, {(100 * self.lightness):.4g}%, {self.alpha:.5g})"
+                self._csshsl = f"hsla({int(360 * self.hue)}, {sat:.4g}%, {lig:.4g}%, {self.alpha:.5g})"
         return self._csshsl
 
     @property
     def csshwb(self):
         if getattr(self, "_csshwb", None) is None:
+            white = int(self.whiteness * 1000) / 10
+            black = int(self.blackness * 1000) / 10
             if self.alpha == 1:
-                self._csshwb = f"hwb({int(360 * self.hue)}deg {(100 * self.whiteness):.4g}% {(100 * self.blackness):.4g}%)"
+                self._csshwb = f"hwb({int(360 * self.hue)}deg {white:.4g}% {black:.4g}%)"
             else:
-                self._csshwb = f"hwb({int(360 * self.hue)}deg {(100 * self.whiteness):.4g}% {(100 * self.blackness):.4g}% / {self.alpha:.5g})"
+                self._csshwb = f"hwb({int(360 * self.hue)}deg {white:.4g}% {black:.4g}% / {self.alpha:.5g})"
 
         return self._csshwb
 
     @property
     def csslab(self):
         if getattr(self, "_csslab", None) is None:
+            ciel = int(self.cie_l * 100) / 100
+            ciea = int(self.cie_a * 100) / 100
+            cieb = int(self.cie_b * 100) / 100
             if self.alpha == 1:
-                self._csslab = (
-                    f"lab({self.cie_l:.4g}% {self.cie_a:.4g} {self.cie_b:.4g})"
-                )
+                self._csslab = f"lab({ciel:.4g}% {ciea:.4g} {cieb:.4g})"
             else:
-                self._csslab = f"lab({self.cie_l:.4g}% {self.cie_a:.4g} {self.cie_b:.4g} / {self.alpha:.5g})"
+                self._csslab = f"lab({ciel:.4g}% {ciea:.4g} {cieb:.4g} / {self.alpha:.5g})"
 
         return self._csslab
 
     @property
     def csslch(self):
         if getattr(self, "_csslch", None) is None:
+            ciel = int(self.cie_l * 100) / 100
+            ciec = int(self.cie_c * 100) / 100
             if self.alpha == 1:
-                self._csslch = f"lch({self.cie_l:.4g}% {self.cie_c:.4g} {int(360 * self.cie_h)}deg)"
+                self._csslch = f"lch({ciel:.4g}% {ciec:.4g} {int(360 * self.cie_h)}deg)"
             else:
-                self._csslch = f"lch({self.cie_l:.4g}% {self.cie_c:.4g} {int(360 * self.cie_h)}deg / {self.alpha:.5g})"
+                self._csslch = f"lch({ciel:.4g}% {ciec:.4g} {int(360 * self.cie_h)}deg / {self.alpha:.5g})"
 
         return self._csslch
 
