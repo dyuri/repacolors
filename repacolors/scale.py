@@ -1,7 +1,7 @@
 from .colors import Color
 from .types import LabTuple
 from .blend import blend
-from typing import List, Any, Tuple, Callable
+from typing import List, Any, Tuple, Callable, Union
 from . import terminal
 import math
 
@@ -102,6 +102,7 @@ class ColorScale:
         cspace: str = "lab",
         gamma_correction: float = None,
         interpolator: str = "linear",
+        name: str = None
     ):
 
         # convert 'colors' to list of Colors
@@ -110,6 +111,11 @@ class ColorScale:
         self.gamma = gamma
         self.cspace = cspace
         self.interpolator = self.INTERPOLATORS.get(interpolator, linear_ip)
+
+        if not name:
+            name = (self.colors[0].name + "_" + self.colors[-1].name).replace("#", "")
+
+        self.name = name
 
         if gamma_correction is None:
             if (
@@ -129,9 +135,21 @@ class ColorScale:
     def reverse(self):
         self.domain.reverse()
 
+    def to_cmap(self, size: int = 256):
+        """convert to matplotlib Colormap
+        """
+        from matplotlib.colors import ListedColormap  # type: ignore
+        return ListedColormap([c.pltc for c in self.samples(size)], self.name, size)
+
     def __getitem__(self, key):
         if isinstance(key, (float, int)):
             return self._get_color_for_pos(key)
+
+    def __str__(self):
+        return f"[{self.name}]"
+
+    def __repr__(self):
+        return f"<ColorScale {self}>"
 
     def _get_color_for_pos(self, pos: float) -> Color:
         projpos = project_domain(pos, self.domain)
@@ -149,6 +167,9 @@ class ColorScale:
         return Color(
             self.interpolator(self.colors, projpos, self.cspace, self.gamma_correction)
         )
+
+    def samples(self, n: int = 10):
+        return [self[self.domain[0] + (self.domain[-1] - self.domain[0]) * i / n] for i in range(n)]
 
     def _displayimage(
         self,
@@ -197,6 +218,10 @@ class ColorScale:
             img.append(line)
 
         return img
+
+    @property
+    def N(self):
+        return self.domain[-1] if not self.reversed else self.domain[0]
 
     @property
     def displayimage(self) -> List[List[Color]]:

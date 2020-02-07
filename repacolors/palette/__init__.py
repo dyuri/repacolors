@@ -15,6 +15,7 @@ def get_palette(name: str):
 
 
 def get_scale(name: str, *args, **kwargs) -> ColorScale:
+    kwargs["name"] = name
     return ColorScale(get_palette(name), *args, **kwargs)
 
 

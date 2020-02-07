@@ -516,18 +516,6 @@ class Color(terminal.TerminalColor):
 
         return self.lhex + ha
 
-    def contrast_ratio(self, other: "Color") -> float:
-        """WCAG relative contrast ratio
-
-        contrast_ratio > 4.5:1 - AA
-        contrast_ratio > 7:1 - AAA
-        """
-        l1, l2 = self.luminance, other.luminance
-        if l2 > l1:
-            l1, l2 = l2, l1
-
-        return (l1 + 0.05) / (l2 + 0.05)
-
     @property
     def lhex(self):
         if getattr(self, "_lhex", None) is None:
@@ -604,6 +592,23 @@ class Color(terminal.TerminalColor):
             self._alpha = alpha if alpha <= 1 else (alpha % 256) / 255
         else:
             raise TypeError("Should not modify an existing 'Color' instance")
+
+    @property
+    def pltc(self):
+        """matplotlib color tuple"""
+        return self.rgb + (self.alpha,)
+
+    def contrast_ratio(self, other: "Color") -> float:
+        """WCAG relative contrast ratio
+
+        contrast_ratio > 4.5:1 - AA
+        contrast_ratio > 7:1 - AAA
+        """
+        l1, l2 = self.luminance, other.luminance
+        if l2 > l1:
+            l1, l2 = l2, l1
+
+        return (l1 + 0.05) / (l2 + 0.05)
 
     def __str__(self):
         return self.hex
