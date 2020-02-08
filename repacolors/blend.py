@@ -1,3 +1,6 @@
+"""
+https://en.wikipedia.org/wiki/Blend_modes
+"""
 from . import colors
 from .types import RGBTuple
 
@@ -22,6 +25,16 @@ def _hardlight(fgv: float, bgv: float) -> float:
     return _overlay(bgv, fgv)
 
 
+def _softlight(fgv: float, bgv: float) -> float:
+    if fgv <= .5:
+        return bgv - (1 - 2 * fgv) * bgv * (1 - bgv)
+
+    if bgv <= .25:
+        return bgv + (2 * fgv - 1) * (((16 * bgv - 12) * bgv + 3) * bgv)
+
+    return bgv + (2 * fgv - 1) * (bgv ** 2 - bgv)
+
+
 BLEND_MODES = {
     "normal": _normal,
     "multiply": _multiply,
@@ -29,7 +42,9 @@ BLEND_MODES = {
     "overlay": _overlay,
     "hardlight": _hardlight,
     "hard-light": _hardlight,
-    # TODO
+    "softlight": _softlight,
+    "soft-light": _softlight,
+    # ...
 }
 
 
@@ -40,7 +55,8 @@ def blend(fg: "colors.Color", bg: "colors.Color", mode: str = "normal", gamma: f
     if mode == "normal":
         if fg.alpha == 1:
             return fg
-        elif fg.alpha == 0:
+
+        if fg.alpha == 0:
             return bg
 
     if gamma is None:
@@ -59,5 +75,3 @@ def blend(fg: "colors.Color", bg: "colors.Color", mode: str = "normal", gamma: f
     )
 
     return colors.Color(blended, bg.alpha)
-
-

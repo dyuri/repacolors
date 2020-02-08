@@ -41,3 +41,9 @@ def test_blend_hardlight():
     c1 = Color("#808080")
     c2 = Color("#a08060")
     assert blend(c1, c2, mode="hard-light") == Color("#a18161")
+
+
+def test_blend_softlight():
+    c1 = Color("#6080a0")
+    c2 = Color("#808010")
+    assert blend(c1, c2, mode="soft-light") == Color("#70801a")
