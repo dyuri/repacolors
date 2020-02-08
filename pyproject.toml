@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "repacolors"
-version = "0.3.0"
+version = "0.4.0"
 description = "Small library for color conversion, manipulation, etc."
 authors = ["Gyuri Horak <dyuri@horak.hu>"]
 repository = "https://github.com/dyuri/repacolors"
