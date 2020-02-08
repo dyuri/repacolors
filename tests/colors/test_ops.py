@@ -76,14 +76,8 @@ def test_get_cspace():
 
 
 def test_mul_f():
-    c = convert.RGBTuple(.1, .1, .1)
-    assert Color(mul_f(c, 3)) == Color((.3, .3, .3))
-
-    c = convert.RGBTuple(.6, .6, .6)
-    assert Color(mul_f(c, .5)) == Color((.3, .3, .3))
-
-    c = convert.RGBTuple(.1, .1, .1)
-    assert mul_f(c, -1) == convert.RGBTuple(-.1, -.1, -.1)
+    c = Color(convert.RGBTuple(.1, .1, .1))
+    assert mul(c, 3) == Color((.3, .3, .3))
 
 
 def test_add_hsl():
@@ -136,6 +130,18 @@ def test_add_rgb():
     c = Color(convert.RGBTuple(.7, .7, .7))
     dct = convert.RGBTuple(-.1, -.1, -.1)
     assert add(c, dct) == Color(convert.RGBTuple(.6, .6, .6))
+
+
+def test_sub():
+    c = Color("#fff")
+    dc = Color("#808080")
+    assert sub(c, dc) == Color("#7f7f7f")
+
+
+def test_div():
+    c = Color("#c09060")
+    dc = 3
+    assert div(c, dc) == Color("#403020")
 
 
 def test_average():

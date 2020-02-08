@@ -1,4 +1,5 @@
-from typing import Iterator, List, Union
+from typing import Iterator, List, Union, Callable
+import operator
 from . import colors
 from .types import *
 
@@ -67,7 +68,6 @@ def normalize_lch(c: CTuple) -> LChTuple:
 def normalize(color: CTuple, cspace: str = None) -> CTuple:
     cspace = cspace if cspace else get_cspace(color)
 
-    # TODO hsv, hwb
     if cspace in ["rgb", "yuv", "xyz", "cmyk"]:
         return normalize_1base(color)
     elif cspace == "lab":
@@ -80,25 +80,44 @@ def normalize(color: CTuple, cspace: str = None) -> CTuple:
     return color
 
 
-def mul_f(t: CTuple, n: float) -> CTuple:
+def _apply_f(t: CTuple, f: float, op: Callable[[float, float], float]) -> CTuple:
     cls = t.__class__
-    return cls(*tuple(v * n for v in t))  # type: ignore
+    return cls(*tuple(op(v, f) for v in t))  # type: ignore
 
 
-# TODO refactor with add
-def mul(color1: "colors.Color", color2: Union["colors.Color", CTuple], cspace: str = None) -> "colors.Color":
+def _apply(color1: "colors.Color", color2: Union["colors.Color", CTuple, float], op: Callable[[float, float], float], cspace: str = None) -> "colors.Color":
     if cspace is None:
-        if isinstance(color2, colors.Color):
-            cspace = color1.cspace
-        else:
+        if isinstance(color2, tuple):
             cspace = get_cspace(color2)
+        else:
+            cspace = color1.cspace
 
     ctup1 = getattr(color1, cspace)
+
+    if isinstance(color2, (int, float)):
+        return colors.Color(normalize(_apply_f(ctup1, color2, op)))
+
     ctup2 = getattr(color2, cspace) if isinstance(color2, colors.Color) else color2
     cls = ctup1.__class__
 
-    ctup = normalize(cls(*tuple(p1 * p2 for p1, p2 in zip(ctup1, ctup2))))
+    ctup = normalize(cls(*tuple(op(p1, p2) for p1, p2 in zip(ctup1, ctup2))))
     return colors.Color(ctup)
+
+
+def add(color1: "colors.Color", color2: Union["colors.Color", CTuple, float], cspace: str = None) -> "colors.Color":
+    return _apply(color1, color2, operator.add, cspace)
+
+
+def sub(color1: "colors.Color", color2: Union["colors.Color", CTuple, float], cspace: str = None) -> "colors.Color":
+    return _apply(color1, color2, operator.sub, cspace)
+
+
+def mul(color1: "colors.Color", color2: Union["colors.Color", CTuple, float], cspace: str = None) -> "colors.Color":
+    return _apply(color1, color2, operator.mul, cspace)
+
+
+def div(color1: "colors.Color", color2: Union["colors.Color", CTuple, float], cspace: str = None) -> "colors.Color":
+    return _apply(color1, color2, operator.truediv, cspace)
 
 
 def mix_linear(v1: float, v2: float, ratio: float = .5, gamma: float = 1):
@@ -115,21 +134,6 @@ def mix_hue(v1: float, v2: float, ratio: float = .5, gamma: float = 1):
             v2 += 1
 
     return mix_linear(v1, v2, ratio, gamma) % 1
-
-
-def add(color1: "colors.Color", color2: Union["colors.Color", CTuple], cspace: str = None) -> "colors.Color":
-    if cspace is None:
-        if isinstance(color2, colors.Color):
-            cspace = color1.cspace
-        else:
-            cspace = get_cspace(color2)
-
-    ctup1 = getattr(color1, cspace)
-    ctup2 = getattr(color2, cspace) if isinstance(color2, colors.Color) else color2
-    cls = ctup1.__class__
-
-    ctup = normalize(cls(*tuple(p1 + p2 for p1, p2 in zip(ctup1, ctup2))))
-    return colors.Color(ctup)
 
 
 def average(

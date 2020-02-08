@@ -623,35 +623,34 @@ class Color(terminal.TerminalColor):
         return NotImplemented
 
     def __add__(self, other):
-        if isinstance(other, (Color, tuple)):
+        if isinstance(other, (Color, tuple, float, int)):
             return ops.add(self, other)
 
         raise TypeError(f"Cannot add '{type(other)}' to 'Color'")
 
-    # TODO see __add__
     def __sub__(self, other):
-        if not isinstance(other, Color):
-            raise TypeError(f"Cannot substract '{type(other)}' from 'Color'")
+        if isinstance(other, (Color, tuple, float, int)):
+            return ops.sub(self, other)
 
-        hsl = tuple(p[0] - p[1] for p in zip(self.hsl, other.hsl))
-        return Color(
-            hsl=(1 if hsl[0] == 1 else hsl[0] % 1, max(hsl[1], 0), max(hsl[2], 0))
-        )
+        raise TypeError(f"Cannot substract '{type(other)}' from 'Color'")
 
-    # TODO
-    def __mul__(self, n):
-        if not isinstance(n, (int, float)):
-            raise TypeError(f"Cannot multiply 'Color' with '{type(n)}'")
-        if n < 0:
-            raise TypeError("Cannot multiply 'Color' with negative values")
+    def __mul__(self, other):
+        if isinstance(other, (Color, tuple, float, int)):
+            return ops.mul(self, other)
 
-        hsl = tuple(p * n for p in self.hsl)
-        return Color(
-            hsl=(1 if hsl[0] == 1 else hsl[0] % 1, min(hsl[1], 1), min(hsl[2], 1))
-        )
+        raise TypeError(f"Cannot multiply '{type(other)}' with 'Color'")
 
-    def __rmul__(self, n):
-        return self * n
+    def __truediv__(self, other):
+        if isinstance(other, (Color, tuple, float, int)):
+            return ops.div(self, other)
+
+        raise TypeError(f"Cannot multiply '{type(other)}' with 'Color'")
+
+    def __radd__(self, color):
+        return self + color
+
+    def __rmul__(self, color):
+        return self * color
 
     def __hash__(self):
         hsl = self.hsl
