@@ -32,7 +32,7 @@ def test_distance_triangle():
         d23 = distance(c2, c3)
         d13 = distance(c1, c3)
 
-        assert d12 + d23 >= d13
+        assert int((d12 + d23) * 1000) >= int(d13 * 1000)
 
 
 def test_distance_cie94_same():
@@ -58,4 +58,4 @@ def test_distance_cie94_triangle():
         d23 = distance_cie94(c2, c3)
         d13 = distance_cie94(c1, c3)
 
-        assert d12 + d23 >= d13
+        assert int((d12 + d23) * 1000) >= int(d13 * 1000)
