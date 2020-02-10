@@ -95,6 +95,28 @@ def rgb2ansi(color: CTuple) -> int:
     return int(ansicol)
 
 
+def wavelength2rgb(wl: float, gamma: float = .8) -> RGBTuple:
+    # TODO ir / uv fade out
+    if wl < 380:
+        return RGBTuple(0, 0, 0)
+    elif wl < 440:
+        s = .3 + .7 * (wl - 380) / 40
+        return RGBTuple((s * (440 - wl) / 40) ** gamma, 0, s ** gamma)
+    elif wl < 490:
+        return RGBTuple(0, ((wl - 440) / 50) ** gamma, 1)
+    elif wl < 510:
+        return RGBTuple(0, 1, ((510 - wl) / 20) ** gamma)
+    elif wl < 580:
+        return RGBTuple(((wl - 510) / 70) ** gamma, 1, 0)
+    elif wl < 645:
+        return RGBTuple(1, ((645 - wl) / 65) ** gamma, 0)
+    elif wl < 750:
+        s = .3 + .7 * (750 - wl) / 105
+        return RGBTuple(s ** gamma, 0, 0)
+
+    # too big
+    return RGBTuple(0, 0, 0)
+
 def rgb2hex(color: CTuple, force_long: bool = False) -> str:
     r, g, b = tuple(max(0, min(1, c)) for c in color)
     hx = "".join(["%02x" % int((c + .0025) * 255) for c in (r, g, b)])
