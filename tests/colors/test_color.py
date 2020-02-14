@@ -388,7 +388,23 @@ def test_color_add():
     assert r + g.rgb == Color("#ff0")
     assert r + g.hsl == Color("#fff")
 
-# TODO -, *, contrast, blend, colorize
+
+def test_colorize():
+    assert Color._colorize(Color("red")) == Color("red").rgb
+    assert Color.colorize(Color("red")) == Color("red")
+    assert Color.colorize(Color("red").rgb) == Color("red")
+    assert Color.colorize(Color("red").hsl) == Color("red")
+    assert Color.colorize(tuple(Color("red").rgb)) == Color("red")
+    assert Color.colorize(tuple(Color("red").rgb256)) == Color("red")
+    assert isinstance(Color.colorize({}), Color)
+
+
+def test_gray():
+    assert Color("black").gray() == Color("black")
+    assert Color("white").gray() == Color("white")
+    assert Color(convert.LabTuple(50, -10, 10)).gray() == Color(convert.LabTuple(50, 0, 0))
+
+# TODO -, *, contrast, blend
 # TODO termimage, info, display, print
 
 def test_pick():
