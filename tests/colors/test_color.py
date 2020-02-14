@@ -297,8 +297,17 @@ def test_attributes():
     assert c.hexa == "#f00a"
     assert c.lhexa == "#ff0000aa"
     assert c.cssrgb == "rgba(255, 0, 0, 0.6667)"
+    assert c.set(alpha=1).cssrgb == "rgb(255, 0, 0)"
     assert c.csshsl == "hsla(0, 100%, 50%, 0.6667)"
+    assert c.set(alpha=1).csshsl == "hsl(0, 100%, 50%)"
+    assert c.csshwb == "hwb(0deg 0% 0% / 0.6667)"
+    assert c.set(alpha=1).csshwb == "hwb(0deg 0% 0%)"
+    assert c.csslab == "lab(53.24% 80.09 67.2 / 0.6667)"
+    assert c.set(alpha=1).csslab == "lab(53.24% 80.09 67.2)"
+    assert c.csslch == "lch(53.24% 104.5 39deg / 0.6667)"
+    assert c.set(alpha=1).csslch == "lch(53.24% 104.5 39deg)"
     assert c.ansi == 196
+    assert c.pltc == (1.0, 0.0, 0.0, 0.6667)
     assert c.termbg == "\x1b[48;2;255;0;0m"
     assert c.termfg == "\x1b[38;2;255;0;0m"
     assert c.hex == str(c)
