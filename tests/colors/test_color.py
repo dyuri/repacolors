@@ -1,5 +1,6 @@
 from repacolors import Color, colors, convert, ops
 import pytest
+import io
 
 
 def test_create_from_colortuple():
@@ -389,15 +390,6 @@ def test_mix():
     assert r.mix(g, gamma=2.2) == Color("#baba00")
 
 
-def test_color_add():
-    r = Color("#f00")
-    g = Color("#0f0")
-
-    assert r + g == Color("#ff0")
-    assert r + g.rgb == Color("#ff0")
-    assert r + g.hsl == Color("#fff")
-
-
 def test_colorize():
     assert Color._colorize(Color("red")) == Color("red").rgb
     assert Color.colorize(Color("red")) == Color("red")
@@ -413,8 +405,125 @@ def test_gray():
     assert Color("white").gray() == Color("white")
     assert Color(convert.LabTuple(50, -10, 10)).gray() == Color(convert.LabTuple(50, 0, 0))
 
-# TODO -, *, contrast, blend
-# TODO termimage, info, display, print
+
+def test_contrast_ratio():
+    assert Color("black").contrast_ratio(Color("white")) == 21
+    assert Color("black").contrast_ratio(Color("black")) == 1
+
+
+def test_color_add():
+    r = Color("#f00")
+    g = Color("#0f0")
+
+    assert r + g == Color("#ff0")
+    assert r + g.rgb == Color("#ff0")
+    assert r + g.hsl == Color("#fff")
+    assert Color("#800000") + .5 == Color("#ff8080")
+
+
+def test_color_radd():
+    r = Color("#f00")
+    g = Color("#0f0")
+
+    assert g.rgb + r == Color("#ff0")
+    assert .5 + Color("#800000") == Color("#ff8080")
+
+
+def test_color_add_incompatible():
+    with pytest.raises(TypeError):
+        Color() + "color"
+
+
+def test_color_mul():
+    r = Color("#ff0100")
+    g = Color("#01ff00")
+
+    assert r * g == Color("#010100")
+    assert r * g.rgb == Color("#010100")
+    assert Color("#800000") * 2 == Color("#ff0000")
+
+
+def test_color_rmul():
+    r = Color("#ff0100")
+    g = Color("#01ff00")
+
+    assert g.rgb * r == Color("#010100")
+    assert 2 * Color("#800000") == Color("#ff0000")
+
+
+def test_color_mul_incompatible():
+    with pytest.raises(TypeError):
+        Color() * "color"
+
+
+def test_color_sub():
+    r = Color("#f00")
+    g = Color("#0f0")
+
+    assert Color("#ff0") - r == g
+    assert Color("#ff0") - r.rgb == g
+    assert Color("#ff0") - r.hsl == Color("black")
+    assert r - .5 == Color("#800000")
+
+
+def test_color_sub_incompatible():
+    with pytest.raises(TypeError):
+        Color() - "color"
+
+
+def test_color_div():
+    w = Color("#fff")
+    g = Color("#0f0")
+
+    assert g / w == g
+    assert g / w.rgb == g
+    assert g / 2 == Color("#008000")
+
+
+def test_color_div_incompatible():
+    with pytest.raises(TypeError):
+        Color() / "color"
+
+
+def test_displayimage():
+    img = Color("green").displayimage
+
+    assert len(img)
+    assert len(img[0])
+
+
+def test_termimage():
+    img = Color("green").termimage
+
+    assert isinstance(img, str)
+
+
+def test_info():
+    info = Color("green").info
+
+    assert "green" in info
+    assert "#008000" in info
+
+
+def test_display():
+    dpinfo = Color("green").display
+
+    assert "green" in dpinfo
+    assert "#008000" in dpinfo
+
+
+def test_print():
+    stream = io.StringIO()
+    Color("red").print(stream=stream)
+
+    assert "#ff0000" in stream.getvalue()
+
+    stream = io.StringIO()
+    Color("red").print(force_ansi=True, stream=stream)
+
+    assert "#ff0000" in stream.getvalue()
+    assert "red" in stream.getvalue()
+
 
 def test_pick():
     c = Color.pick(picker=["echo", "#ff0000"])

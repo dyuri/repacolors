@@ -745,9 +745,9 @@ class Color(terminal.TerminalColor):
 
         return "".join(output)
 
-    def print(self, format: str = "display", force_ansi: bool = False):
-        if not force_ansi and not sys.stdout.isatty() and format == "display":
-            format = "lhex"
+    def print(self, fmt: str = "display", force_ansi: bool = False, stream = sys.stdout):
+        if not force_ansi and not sys.stdout.isatty() and fmt == "display":
+            fmt = "lhex"
 
-        content = getattr(self, format, self.lhex)
-        print(content)
+        content = getattr(self, fmt, self.lhex)
+        print(content, file=stream)
