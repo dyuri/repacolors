@@ -1,0 +1,12 @@
+- color
+  - similar colors
+  - complementer, triad, tetrad, split complementer, sweetspot
+  - "theme generator"
+- proper caching
+- color name finder
+- color scale
+  - subscale [:]
+  - sample [::]
+  - css gradient output
+- color plane
+- color cube

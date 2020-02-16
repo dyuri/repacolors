@@ -229,7 +229,7 @@ class ColorScale:
         )
 
     def samples(self, n: int = 10):
-        return [self[self.domain[0] + (self.domain[-1] - self.domain[0]) * i / n] for i in range(n)]
+        return [self[self.domain[0] + (self.domain[-1] - self.domain[0]) * i / (n - 1)] for i in range(n)]
 
     def _displayimage(
         self,
