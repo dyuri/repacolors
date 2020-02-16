@@ -3,6 +3,7 @@ from .types import LabTuple
 from .blend import blend
 from typing import List, Any, Tuple, Callable, Union
 from . import terminal
+from functools import wraps
 import math
 
 
@@ -48,10 +49,41 @@ def linear_ip(
 
     lenc = len(colors)
     idx = int(pos * (lenc - 1))
-    col1, col2 = colors[idx : idx + 2]
+    cols = colors[idx:idx + 2]
+    if len(cols) == 1:
+        return cols[0]
+
+    col1, col2 = cols
     ratio = (pos - idx / (lenc - 1)) * (lenc - 1)
 
     return col1.mix(col2, ratio=ratio, cspace=cspace, gamma=gamma)
+
+
+def linear_ip_f(lst: List[float], pos: float = 0.5):
+    llen = len(lst)
+    idx = int(pos * (llen - 1))
+    vals = lst[idx:idx + 2]
+    if len(vals) == 1:
+        return vals[0]
+
+    val1, val2 = vals
+    ratio = (pos - idx / (llen - 1)) * (llen - 1)
+
+    return val1 + (val2 - val1) * ratio
+
+
+def luminance_mapper(fn: Callable, lumin_map: List[float]):
+    
+    @wraps(fn)
+    def _lmapper(
+        colors: List[Color], pos: float = 0.5, cspace: str = "lab", gamma: float = 1.0
+    ) -> Color:
+        lumin = linear_ip_f(lumin_map, pos)
+
+        color = fn(colors, pos, cspace, gamma)
+        return color.set(cie_l=lumin)
+
+    return _lmapper
 
 
 def project_domain(pos: float, domain: List[float]) -> float:
@@ -102,6 +134,7 @@ class ColorScale:
         cspace: str = "lab",
         gamma_correction: float = None,
         interpolator: str = "linear",
+        luminance_map: List[float] = None,
         name: str = None
     ):
 
@@ -110,7 +143,9 @@ class ColorScale:
         self.domain: List[float] = [0, 1] if domain is None else domain
         self.gamma = gamma
         self.cspace = cspace
-        self.interpolator = self.INTERPOLATORS.get(interpolator, linear_ip)
+        self._luminance_map = luminance_map
+        self._interpolator = self.INTERPOLATORS.get(interpolator, linear_ip)
+        self._lumin_interpolator = None
 
         if not name:
             name = (self.colors[0].name + "_" + self.colors[-1].name).replace("#", "")
@@ -127,6 +162,29 @@ class ColorScale:
                 gamma_correction = 1.0
 
         self.gamma_correction = gamma_correction
+
+    @property
+    def interpolator(self):
+        if not self.luminance_map:
+            return self._interpolator
+        else:
+            if not self._lumin_interpolator:
+                self._lumin_interpolator = luminance_mapper(self._interpolator, self.luminance_map)
+            return self._lumin_interpolator
+
+    @interpolator.setter
+    def interpolator(self, fn: Callable):
+        self._interpolator = fn
+        self._lumin_interpolator = None
+
+    @property
+    def luminance_map(self):
+        return self._luminance_map
+
+    @luminance_map.setter
+    def luminance_map(self, lmap: List[float]):
+        self._luminance_map = lmap
+        self._lumin_interpolator = None
 
     @property
     def reversed(self):
@@ -157,15 +215,17 @@ class ColorScale:
         if self.gamma != 1.0:
             projpos = projpos ** self.gamma
 
-        colors = self.colors if not self.reversed else list(reversed(self.colors))
+        colors = self.colors
 
-        if projpos == 0:
-            return colors[0]
-        if projpos == 1:
-            return colors[-1]
+        if projpos < 0:
+            return colors[0] if not self.reversed else colors[-1]
+        if projpos > 1:
+            return colors[-1] if not self.reversed else colors[-1]
+
+        interp = self.interpolator
 
         return Color(
-            self.interpolator(self.colors, projpos, self.cspace, self.gamma_correction)
+            interp(self.colors, projpos, self.cspace, self.gamma_correction)
         )
 
     def samples(self, n: int = 10):
@@ -195,6 +255,7 @@ class ColorScale:
             )
 
         bgl = len(bgcolors)
+        frm, to = (self.domain[0], self.domain[-1]) if not self.reversed else (self.domain[-1], self.domain[0])
 
         for y in range(h):
             line = []
@@ -206,8 +267,8 @@ class ColorScale:
                     line.append(
                         blend(
                             self[
-                                self.domain[0]
-                                + (self.domain[-1] - self.domain[0])
+                                frm
+                                + (to - frm)
                                 * (x - border)
                                 / width
                             ],

@@ -8,5 +8,6 @@ color scales and more.
 
 from .colors import Color
 from .scale import ColorScale
+from .cubehelix import CubeHelix
 
 __version__ = "0.4.0"
