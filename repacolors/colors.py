@@ -439,6 +439,26 @@ class Color(terminal.TerminalColor):
 
         return ops.sub(Color("#fff"), self, cspace)
 
+    def _divide_wheel(self, n: int, cspace: "str" = None):
+        if cspace is None:
+            cspace = self.cspace
+
+        if cspace in ["rgb", "hsl", "hsv", "hwb"]:
+            return [self.set(hue=self.hue + v / n) for v in range(n)]
+
+        if cspace in ["lab", "lch", "xyz"]:
+            return [self.set(cie_h=self.cie_h + v / n) for v in range(n)]
+
+    def triad(self, cspace: "str" = None):
+        return self._divide_wheel(3, cspace)
+
+    def square(self, cspace: "str" = None):
+        return self._divide_wheel(4, cspace)
+
+    def tetrad(self, cspace: "str" = None):
+        colors = self._divide_wheel(6, cspace)
+        return colors[0:2] + colors[3:5]
+
     def similar(self, other: "Color") -> bool:
         return self.distance(other) < 2.3
 
