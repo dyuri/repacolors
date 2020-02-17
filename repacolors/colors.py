@@ -433,6 +433,12 @@ class Color(terminal.TerminalColor):
     def distance(self, other: "Color") -> float:
         return distance.distance_cie94(self.lab, other.lab)
 
+    def complementer(self, cspace: "str" = None):
+        if cspace is None:
+            cspace = self.cspace
+
+        return ops.sub(Color("#fff"), self, cspace)
+
     def similar(self, other: "Color") -> bool:
         return self.distance(other) < 2.3
 

@@ -485,6 +485,15 @@ def test_color_div_incompatible():
         Color() / "color"
 
 
+def test_color_complementer():
+    r = Color("red")
+
+    assert r.complementer() == Color("#0ff")
+    assert r.complementer("lab") == Color("#0090e0")
+    assert r.complementer("lch") == Color("#2e8000")
+    assert r.complementer("xyz") == Color("#34fff7")
+
+
 def test_displayimage():
     img = Color("green").displayimage
 

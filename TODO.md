@@ -10,3 +10,7 @@
   - css gradient output
 - color plane
 - color cube
+
+- cmd line tool
+  - input from stdin
+  - scales
