@@ -459,6 +459,14 @@ class Color(terminal.TerminalColor):
         colors = self._divide_wheel(6, cspace)
         return colors[0:2] + colors[3:5]
 
+    def split_complementary(self, cspace: "str" = None):
+        colors = self._divide_wheel(12, cspace)
+        return colors[0:1] + colors[5:6] + colors[7:8]
+
+    def analogous(self, cspace: "str" = None):
+        colors = self._divide_wheel(12, cspace)
+        return [colors[-1]] + colors[0:2]
+
     def similar(self, other: "Color") -> bool:
         return self.distance(other) < 2.3
 
