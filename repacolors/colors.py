@@ -258,6 +258,7 @@ class Color(terminal.TerminalColor):
             colordef.startswith("rgb")
             or colordef.startswith("hsl")
             or colordef.startswith("hwb")
+            or colordef.startswith("lab")
         ):
             mode = colordef[:3]
             clr, self.alpha = self.parse_css_color_values(colordef, mode)
@@ -315,6 +316,8 @@ class Color(terminal.TerminalColor):
     @staticmethod
     def parse_css_color_value(csscolorvalue: str, mode: str = "rgb") -> float:
         if csscolorvalue[-1] == "%":
+            if mode.lower() == "lab":
+                return float(csscolorvalue[:-1])
             return float(csscolorvalue[:-1]) / 100
         elif mode.lower() == "alpha":
             return float(csscolorvalue)
@@ -329,6 +332,8 @@ class Color(terminal.TerminalColor):
 
             # degree
             return float(csscolorvalue) / 360
+        elif mode.lower() == "lab":
+            return float(csscolorvalue)
 
         # rgb
         return float(csscolorvalue) / 255
@@ -433,7 +438,7 @@ class Color(terminal.TerminalColor):
     def distance(self, other: "Color") -> float:
         return distance.distance_cie94(self.lab, other.lab)
 
-    def complementer(self, cspace: "str" = None):
+    def complementary(self, cspace: "str" = None):
         if cspace is None:
             cspace = self.cspace
 

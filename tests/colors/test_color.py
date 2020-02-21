@@ -187,6 +187,26 @@ def test_create_from_csshwb():
         assert c.lhexa == "#8c998026"
 
 
+def test_create_from_csslab():
+    cdefs = [
+        "lab(58.93% -26.61 35.55)",
+        "lab(58.93, -26.61, 35.55)",
+    ]
+
+    for cdef in cdefs:
+        c = Color(cdef)
+        assert c.lhexa == "#73994dff"
+
+    cdefs = [
+        "lab(61.58 -9.4 11.59 / 0.14902)",
+        "lab(61.58%, -9.4, 11.59, 0.14902)",
+    ]
+
+    for cdef in cdefs:
+        c = Color(cdef)
+        assert c.lhexa == "#8c998026"
+
+
 def test_create_from_cssgray():
     assert Color("gray(50)") == Color(convert.LabTuple(50, 0, 0))
     assert Color("gray(75 / .5)") == Color(convert.LabTuple(75, 0, 0), .5)
@@ -223,9 +243,6 @@ def test_create_with_extra_params():
     # red -> blue
     c = Color("blue", hue=0)
     assert c.lhex == "#ff0000"
-
-
-# TODO colorize
 
 
 def test_equality():
@@ -315,6 +332,12 @@ def test_attributes():
 
     c = Color((1, 0, 0), alpha=.5)
     assert c.hexa == c.lhexa
+
+
+def test_clipped():
+    superwhite = Color(convert.LabTuple(250, 0, 0))
+    assert superwhite == Color("white")
+    assert superwhite.clipped
 
 
 def test_attributes_frozen():
@@ -485,13 +508,13 @@ def test_color_div_incompatible():
         Color() / "color"
 
 
-def test_color_complementer():
+def test_color_complementary():
     r = Color("red")
 
-    assert r.complementer() == Color("#0ff")
-    assert r.complementer("lab") == Color("#0090e0")
-    assert r.complementer("lch") == Color("#2e8000")
-    assert r.complementer("xyz") == Color("#34fff7")
+    assert r.complementary() == Color("#0ff")
+    assert r.complementary("lab") == Color("#0090e0")
+    assert r.complementary("lch") == Color("#2e8000")
+    assert r.complementary("xyz") == Color("#34fff7")
 
 
 def test_displayimage():
