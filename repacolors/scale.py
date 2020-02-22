@@ -135,11 +135,14 @@ class ColorScale:
         gamma_correction: float = None,
         interpolator: str = "linear",
         luminance_map: List[float] = None,
+        cyclic: bool = False,
         name: str = None
     ):
 
         # convert 'colors' to list of Colors
         self.colors = [c if isinstance(c, Color) else Color(c) for c in colors]
+        if cyclic:
+            self.colors = self.colors + self.colors[0:1]
         self.domain: List[float] = [0, 1] if domain is None else domain
         self.gamma = gamma
         self.cspace = cspace
@@ -202,6 +205,7 @@ class ColorScale:
     def __getitem__(self, key):
         if isinstance(key, (float, int)):
             return self._get_color_for_pos(key)
+        # TODO slices
 
     def __str__(self):
         return f"[{self.name}]"
