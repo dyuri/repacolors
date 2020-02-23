@@ -120,7 +120,7 @@ class ColorScale:
 
     DISPLAY_BORDER = 1
     DISPLAY_HEIGHT = 4
-    DISPLAY_WIDTH = 20
+    DISPLAY_WIDTH = 40
     INTERPOLATORS = {
         "linear": linear_ip,
         "bezier": bezier_ip,

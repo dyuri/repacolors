@@ -1,9 +1,10 @@
 from .palette import get_scale
 from .scale import ColorScale
 from .colors import Color
-from .types import HSLTuple, LChTuple
+from .types import HSLTuple, LChTuple, LabTuple
 from .distance import distance_hue
-from typing import Tuple
+from . import terminal
+from typing import Tuple, List
 
 
 class ColorWheel:
@@ -12,6 +13,9 @@ class ColorWheel:
 
     Defaults to classic RYB color wheel
     """
+
+    DISPLAY_WIDTH = 48
+    DISPLAY_BORDER = 2
 
     def __init__(self, scale: ColorScale = None, cspace: str = "rgb"):
         if scale is None:
@@ -147,6 +151,44 @@ class ColorWheel:
 
         return tuple(self._adjust(c, color) for c in colors)
 
+    def _displayimage(self, width: int = None, border: int = None, bgcolors: List[Color] = None) -> List[List["Color"]]:
+        if width is None:
+            width = self.DISPLAY_WIDTH
+        if border is None:
+            border = self.DISPLAY_BORDER
+
+        w = width + 2 * border
+        img = []
+
+        if bgcolors is None:
+            bgcolors = getattr(
+                self, "bgcolors", [Color(LabTuple(95, 0, 0)), Color(LabTuple(65, 0, 0))]
+            )
+
+        bgl = len(bgcolors)
+
+        # TODO square -> wheel
+        for y in range(w):
+            line = []
+            for x in range(w):
+                bgc = bgcolors[(y + x) % bgl]
+                if x < border or y < border or x > w - border - 1 or y > w - border - 1:
+                    line.append(bgc)
+                else:
+                    pos = 12 * (x - border) / width
+                    line.append(self[pos])
+            img.append(line)
+
+        return img
+
+    def print(
+        self,
+        width: int = None,
+        border: int = None,
+        bgcolors: List["Color"] = None,
+    ):
+        print(terminal.draw(self._displayimage(width, border, bgcolors)))
+
 
 class HSLColorWheel(ColorWheel):
     """HSL/RGB color wheel
@@ -190,18 +232,3 @@ HSL = HSLColorWheel()
 RGB = HSL
 LCH = LChColorWheel()
 LAB = LCH
-
-# TODO
-# - colorwheel
-#   - from scale
-#   - by color space - hsl/rgb or lch/lab
-# - dedicated color wheels
-#   - hsl (rgb)
-#   - lch (lab)
-#   - ryb
-# - complementary
-# - triad
-# - square
-# - tetrad
-# - split_complementary
-# - analogous
