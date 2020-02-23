@@ -59,3 +59,10 @@ def test_distance_cie94_triangle():
         d13 = distance_cie94(c1, c3)
 
         assert int((d12 + d23) * 1000) >= int(d13 * 1000)
+
+
+def test_distance_hue():
+    assert .1999 < distance_hue(.1, .3) < .20001
+    assert -.1999 > distance_hue(.3, .1) > -.20001
+    assert -.1999 > distance_hue(.1, .9) > -.20001
+    assert .1999 < distance_hue(.9, .1) < .20001

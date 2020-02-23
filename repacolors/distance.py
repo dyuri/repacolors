@@ -35,3 +35,15 @@ def distance_cie94(lab1: LabTuple, lab2: LabTuple, w: Tuple[float, float, float]
     sH = 1 + w[2] * c1
 
     return ((dL / w[0]) ** 2 + (dC / sC) ** 2 + (dH / sH) ** 2) ** .5
+
+
+def distance_hue(h1: float, h2: float) -> float:
+    """HUE based distance
+    distance > 0 -> "clockwise"
+    distance < 0 -> "counter-clocwise"
+    """
+    dist = h2 - h1
+    if abs(dist) > .5:
+        dist = (-1 if dist > 0 else 1) * (1 - abs(dist))
+
+    return dist

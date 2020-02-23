@@ -401,7 +401,7 @@ class Color(terminal.TerminalColor):
         return self.set(cie_c=self.cie_c + amount)
 
     def desaturate(self, amount=10):
-        return self.set(cie_c=self.cie_c - amount)
+        return self.set(cie_c=max(0, self.cie_c - amount))
 
     def rotate(self, amount=0.1):
         return self.set(cie_h=self.cie_h + amount)
