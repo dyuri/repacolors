@@ -2,9 +2,11 @@ from .palette import get_scale
 from .scale import ColorScale
 from .colors import Color
 from .types import HSLTuple, LChTuple, LabTuple
+from .blend import blend
 from .distance import distance_hue
 from . import terminal
 from typing import Tuple, List
+import math
 
 
 class ColorWheel:
@@ -162,7 +164,7 @@ class ColorWheel:
 
         if bgcolors is None:
             bgcolors = getattr(
-                self, "bgcolors", [Color(LabTuple(95, 0, 0)), Color(LabTuple(65, 0, 0))]
+                self, "bgcolors", [Color(LabTuple(35, 0, 0)), Color(LabTuple(5, 0, 0))]
             )
 
         bgl = len(bgcolors)
@@ -172,11 +174,18 @@ class ColorWheel:
             line = []
             for x in range(w):
                 bgc = bgcolors[(y + x) % bgl]
-                if x < border or y < border or x > w - border - 1 or y > w - border - 1:
-                    line.append(bgc)
+                ro, ri = width / 2, width / 3
+                rx, ry = w / 2 - x, w / 2 - y
+                r = (rx ** 2 + ry ** 2) ** .5
+                if r < ro:
+                    alpha = math.atan2(ry, rx)
+                    pos = 12 * alpha / math.tau - 3
+                    alpha = 1
+                    if r < ri:
+                        alpha = 1 - (ri - r) / ri
+                    line.append(blend(self[pos].set(alpha=alpha), bgc))
                 else:
-                    pos = 12 * (x - border) / width
-                    line.append(self[pos])
+                    line.append(bgc)
             img.append(line)
 
         return img
@@ -212,7 +221,7 @@ class LChColorWheel(ColorWheel):
     """LCh/Lab color wheel
     """
 
-    def __init__(self, cie_l: float = 50, cie_c: float = 75):
+    def __init__(self, cie_l: float = 60, cie_c: float = 100):
         self.cie_l = cie_l
         self.cie_c = cie_c
         self.cspace = "lab"
