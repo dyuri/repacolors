@@ -95,6 +95,6 @@ If no color wheel name provided, it will create one from the colors provided on 
 ```
 $ repacolor colorwheel rgb
 [RGB color wheel]
-$ repacolor palette red white black red | repacolor colorwheel
+$ repacolor scale red white black red | repacolor colorwheel
 [red - white - black color wheel]
 ```
