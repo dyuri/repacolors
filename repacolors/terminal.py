@@ -1,5 +1,6 @@
 from typing import Iterable, Any, Union, List
 from itertools import zip_longest
+import shutil
 
 
 def _linepairs(image: Iterable[Iterable[Any]]):
@@ -23,6 +24,10 @@ class TerminalColor():
         return f"\x1b[38;5;{self.color}m"
 
     termreset = "\x1b[0m"
+
+
+def termsize():
+    return shutil.get_terminal_size((80, 20))
 
 
 def draw(image: Iterable[Iterable[TerminalColor]]) -> str:

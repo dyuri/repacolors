@@ -1,8 +1,6 @@
 - color
   - similar colors
-  - complementer, triad, tetrad, split complementer, sweetspot
   - "theme generator"
-  - all from above using "RYB" (available as colorscale)
 - proper caching
 - color name finder
 - color scale
@@ -13,5 +11,4 @@
 - color cube
 
 - cmd line tool
-  - input from stdin
-  - scales
+  - cubehelix w/ parameters

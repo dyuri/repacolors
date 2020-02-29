@@ -16,12 +16,11 @@ class ColorWheel:
     Defaults to classic RYB color wheel
     """
 
-    DISPLAY_WIDTH = 48
-    DISPLAY_BORDER = 2
+    DISPLAY_BORDER = 1
 
     def __init__(self, scale: ColorScale = None, cspace: str = "rgb"):
         if scale is None:
-            scale = get_scale("ryb", cyclic=True)
+            scale = get_scale("rybw3", cyclic=True)
 
         self.scale = scale
         self.cspace = cspace
@@ -154,10 +153,11 @@ class ColorWheel:
         return tuple(self._adjust(c, color) for c in colors)
 
     def _displayimage(self, width: int = None, border: int = None, bgcolors: List[Color] = None) -> List[List["Color"]]:
-        if width is None:
-            width = self.DISPLAY_WIDTH
         if border is None:
             border = self.DISPLAY_BORDER
+        if width is None:
+            ts = terminal.termsize()
+            width = min(ts[0], ts[1] * 2) - border * 2 - 6 # -6 for prompt
 
         w = width + 2 * border
         img = []
@@ -169,7 +169,6 @@ class ColorWheel:
 
         bgl = len(bgcolors)
 
-        # TODO square -> wheel
         for y in range(w):
             line = []
             for x in range(w):

@@ -5,6 +5,7 @@ from typing import List, Any, Tuple, Callable, Union
 from . import terminal
 from functools import wraps
 import math
+import sys
 
 
 def _binomial(i: int, n: int) -> float:
@@ -121,6 +122,7 @@ class ColorScale:
     DISPLAY_BORDER = 1
     DISPLAY_HEIGHT = 4
     DISPLAY_WIDTH = 40
+    DISPLAY_STEPS = 12
     INTERPOLATORS = {
         "linear": linear_ip,
         "bezier": bezier_ip,
@@ -241,6 +243,7 @@ class ColorScale:
         height: int = None,
         border: int = None,
         bgcolors: List["Color"] = None,
+        steps: int = None,
     ) -> List[List["Color"]]:
         if width is None:
             width = self.DISPLAY_WIDTH
@@ -248,6 +251,8 @@ class ColorScale:
             height = self.DISPLAY_HEIGHT
         if border is None:
             border = self.DISPLAY_BORDER
+        if steps is None:
+            steps = width
 
         w = width + 2 * border
         h = height + 2 * border
@@ -260,6 +265,7 @@ class ColorScale:
 
         bgl = len(bgcolors)
         frm, to = (self.domain[0], self.domain[-1]) if not self.reversed else (self.domain[-1], self.domain[0])
+        frm, to = frm * steps, to * steps
 
         for y in range(h):
             line = []
@@ -268,14 +274,10 @@ class ColorScale:
                 if x < border or y < border or x > w - border - 1 or y > h - border - 1:
                     line.append(bgc)
                 else:
+                    pos = math.floor(frm + (to - frm) * (x - border) / width) / (steps - 1)
                     line.append(
                         blend(
-                            self[
-                                frm
-                                + (to - frm)
-                                * (x - border)
-                                / width
-                            ],
+                            self[pos],
                             bgc,
                         )
                     )
@@ -298,9 +300,29 @@ class ColorScale:
 
     def print(
         self,
+        fmt: str = "display",
         width: int = None,
         height: int = None,
         border: int = None,
         bgcolors: List["Color"] = None,
+        force_ansi: bool = False,
+        steps: int = None,
     ):
-        print(terminal.draw(self._displayimage(width, height, border, bgcolors)))
+        if not force_ansi and not sys.stdout.isatty() and fmt == "display":
+            fmt = "lhex"
+
+        if fmt == "display":
+            if border is None:
+                border = self.DISPLAY_BORDER
+            if width is None:
+                width = terminal.termsize()[0] - 2 * border
+
+            print(terminal.draw(self._displayimage(width, height, border, bgcolors, steps)))
+
+        else:
+            if steps is None:
+                steps = self.DISPLAY_STEPS
+            if steps < 2:
+                steps = 2
+            for i in range(steps):
+                self[i/(steps - 1)].print(fmt=fmt)

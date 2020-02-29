@@ -9,5 +9,6 @@ color scales and more.
 from .colors import Color
 from .scale import ColorScale
 from .cubehelix import CubeHelix
+from .schemes import ColorWheel
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

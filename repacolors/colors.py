@@ -701,6 +701,20 @@ class Color(terminal.TerminalColor):
         )
 
     @property
+    def textcolor(self):
+        if getattr(self, "_textcolor", None) is None:
+            w = Color("#fff")
+            b = Color("#000")
+            ctrw = self.contrast_ratio(w)
+            ctrb = self.contrast_ratio(b)
+            if ctrw > ctrb:
+                self._textcolor = w
+            else:
+                self._textcolor = b
+
+        return self._textcolor
+
+    @property
     def termbg(self):
         rgb = self.rgb256
         return f"\x1b[48;2;{rgb.red};{rgb.green};{rgb.blue}m"
@@ -784,8 +798,12 @@ class Color(terminal.TerminalColor):
 
         return "".join(output)
 
+    @property
+    def hexdisplay(self):
+        return f"{self.termbg}{self.textcolor.termfg} {self.lhex} {self.termreset}"
+
     def print(self, fmt: str = "display", force_ansi: bool = False, stream = sys.stdout):
-        if not force_ansi and not sys.stdout.isatty() and fmt == "display":
+        if not force_ansi and not sys.stdout.isatty() and fmt in ["display", "hexdisplay"]:
             fmt = "lhex"
 
         content = getattr(self, fmt, self.lhex)
