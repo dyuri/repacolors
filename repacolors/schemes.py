@@ -152,6 +152,14 @@ class ColorWheel:
 
         return tuple(self._adjust(c, color) for c in colors)
 
+    def monochromatic(self, color: Color, n : int = 5) -> Tuple[Color, ...]:
+        """Monochromatic color scheme
+        """
+        deltal = 1 / n
+        diffl = color.lightness % deltal
+        lightnesses = [diffl + deltal * i for i in range(n)]
+        return tuple(color.set(lightness=lness) for lness in lightnesses)
+
     def _displayimage(self, width: int = None, border: int = None, bgcolors: List[Color] = None) -> List[List["Color"]]:
         if border is None:
             border = self.DISPLAY_BORDER
