@@ -3,7 +3,7 @@ import os
 import sys
 import math
 import re
-import subprocess
+import subprocess  # nosec
 from itertools import zip_longest
 from typing import Dict, Any, Optional, Callable, Iterator, List, Union, Tuple
 from . import convert
@@ -340,7 +340,7 @@ class Color(terminal.TerminalColor):
 
     @classmethod
     def pick(cls, picker: Union[str, List[str]] = "xcolor") -> "Color":
-        proc = subprocess.Popen(picker, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(picker, stdout=subprocess.PIPE)  # nosec
         res = proc.communicate()[0].strip().decode()
         return cls(res)
 
