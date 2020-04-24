@@ -19,4 +19,3 @@ It supports multiple formats:
 - hexadecimal color notation (`#f00` or `#ff0000aa`)
 - css color notation (`rgb()`, `hsl()`, `hwb()`, `lab()`, `gray()`)
 - any string will generate some color
-

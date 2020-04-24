@@ -74,7 +74,7 @@ def linear_ip_f(lst: List[float], pos: float = 0.5):
 
 
 def luminance_mapper(fn: Callable, lumin_map: List[float]):
-    
+
     @wraps(fn)
     def _lmapper(
         colors: List[Color], pos: float = 0.5, cspace: str = "lab", gamma: float = 1.0

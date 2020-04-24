@@ -15,7 +15,7 @@ $ pip install repacolors
 ## `repacolor` command
 
 ```
-$ repacolor --help                                                                         
+$ repacolor --help
 Usage: repacolor [OPTIONS] COMMAND [ARGS]...
 
 Options:
@@ -36,11 +36,11 @@ Display color information in the terminal.
 ```
 $ repacolor display red
 
-+--------+ red - #ff0000  
-|  BIG   | rgb(255, 0, 0)  
-|  RED   | hsl(0, 100%, 50%)  
-| SQUARE | lab(53.24% 80.09 67.2)  
-+--------+   
++--------+ red - #ff0000
+|  BIG   | rgb(255, 0, 0)
+|  RED   | hsl(0, 100%, 50%)
+| SQUARE | lab(53.24% 80.09 67.2)
++--------+
 
 $ repacolor display "#ffaad5" "rgb(128, 12, 46, .8)"
 ... (displays both colors)
