@@ -12,6 +12,12 @@ Small library for color conversion, manipulation, etc.
 $ pip install repacolors
 ```
 
+To get the colors from `Xrdb`, install it with the `xresources` extras:
+
+```
+$ pip install repacolors[xresources]
+```
+
 ## `repacolor` command
 
 ```
