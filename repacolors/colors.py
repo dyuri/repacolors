@@ -340,6 +340,10 @@ class Color(terminal.TerminalColor):
 
     @classmethod
     def pick(cls, picker: Union[str, List[str]] = "xcolor") -> "Color":
+        # TODO optionally integrate chameleon (https://github.com/seebye/chameleon)
+        # TODO copy to clipboard
+        # TODO draw color wheel
+        # TODO => separate module
         proc = subprocess.Popen(picker, stdout=subprocess.PIPE)  # nosec
         res = proc.communicate()[0].strip().decode()
         return cls(res)
