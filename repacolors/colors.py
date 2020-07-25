@@ -285,6 +285,23 @@ class Color(terminal.TerminalColor):
                 self.cspace = "rgb"
 
     @staticmethod
+    def from_bytes(cbytes: bytes, byteorder: str = "RGB") -> "Color":
+        red = 0
+        green = 0
+        blue = 0
+        alpha = 1.0
+        for i, component in enumerate(byteorder.upper()):
+            if component == "R":
+                red = cbytes[i]
+            elif component == "G":
+                green = cbytes[i]
+            elif component == "B":
+                blue = cbytes[i]
+            elif component == "A":
+                alpha = cbytes[i] / 255
+        return Color(bytes([red, green, blue]), alpha=alpha)
+
+    @staticmethod
     def parse_css_color_values(
         csscolordef: str, mode: str = "rgb"
     ) -> Tuple[CTuple, float]:
