@@ -555,8 +555,3 @@ def test_print():
 
     assert "#ff0000" in stream.getvalue()
     assert "red" in stream.getvalue()
-
-
-def test_pick():
-    c = Color.pick(picker=["echo", "#ff0000"])
-    assert c.lhex == "#ff0000"
