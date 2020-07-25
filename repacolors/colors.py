@@ -3,7 +3,6 @@ import os
 import sys
 import math
 import re
-import subprocess  # nosec
 from itertools import zip_longest
 from typing import Dict, Any, Optional, Callable, Iterator, List, Union, Tuple
 from . import convert
@@ -356,16 +355,6 @@ class Color(terminal.TerminalColor):
         return float(csscolorvalue) / 255
 
     @classmethod
-    def pick(cls, picker: Union[str, List[str]] = "xcolor") -> "Color":
-        # TODO optionally integrate chameleon (https://github.com/seebye/chameleon)
-        # TODO copy to clipboard
-        # TODO draw color wheel
-        # TODO => separate module
-        proc = subprocess.Popen(picker, stdout=subprocess.PIPE)  # nosec
-        res = proc.communicate()[0].strip().decode()
-        return cls(res)
-
-    @classmethod
     def _colorize(cls, obj: Any) -> RGBTuple:
         if isinstance(obj, RGBTuple):
             return obj
@@ -533,7 +522,7 @@ class Color(terminal.TerminalColor):
     @rgb256.setter
     def rgb256(self, rgb: CTuple):
         self.rgb = ops.normalize_1base(RGBTuple(*tuple(c / 255 for c in rgb)))
-        self._rgb256 = rgb
+        self._rgb256 = RGBTuple(*rgb)
 
     @property
     def hsl(self):

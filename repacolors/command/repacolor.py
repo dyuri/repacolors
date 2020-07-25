@@ -3,6 +3,8 @@ import repacolors
 import repacolors.palette
 import repacolors.schemes
 import sys
+import os
+import subprocess  # nosec
 
 
 def from_stdin():
@@ -12,6 +14,12 @@ def from_stdin():
         colordef.append(line.strip())
 
     return colordef
+
+
+def pick_external(picker="xcolor"):
+    proc = subprocess.Popen(picker, stdout=subprocess.PIPE)  # nosec
+    res = proc.communicate()[0].strip().decode()
+    return repacolors.Color(res)
 
 
 @click.group(invoke_without_command=False)
@@ -80,9 +88,24 @@ def colorwheel(name):
 @click.option("-n", "--number", "number", default=1, help="Number of colors to pick.")
 def pick(format, number):
     """Pick colors from your desktop."""
-    while number:
-        number -= 1
-        c = repacolors.Color.pick()
+    # TODO copy to clipboard
+    # TODO draw color wheel
+
+    colorpicker = os.environ.get("COLORPICKER")
+    colors = []
+
+    # if color picker is not set, try to use integrated one
+    if not colorpicker:
+        try:
+            import repacolors.picker
+            colors = repacolors.picker.pick(number)
+        except ImportError:
+            pass
+
+    while number > len(colors):
+        colors.append(pick_external())
+
+    for c in colors:
         c.print(format)
 
 

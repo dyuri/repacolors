@@ -264,10 +264,11 @@ class ColorPreview:
 
     def pick(self, rgb):
         self._picked += 1
-        self._colors = [rgb] + self._colors[:-1]
 
         if self._picked >= self._length:
             return True
+
+        self._colors = [rgb] + self._colors[:-1]
 
 
 class WindowMapper(ContextDecorator):
@@ -311,4 +312,4 @@ def pick(length=1):
                     if should_quit:
                         break
 
-    return [Color(rgb) for rgb in wnd._colors]
+    return [Color(rgb) for rgb in reversed(wnd._colors)]

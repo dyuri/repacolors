@@ -12,10 +12,10 @@ Small library for color conversion, manipulation, etc.
 $ pip install repacolors
 ```
 
-To get the colors from `Xrdb`, install it with the `xresources` extras:
+To get the colors from `Xrdb`, install it with the `xextras` extras:
 
 ```
-$ pip install repacolors[xresources]
+$ pip install repacolors[xextras]
 ```
 
 ## `repacolor` command
@@ -56,9 +56,16 @@ $ echo "#ffffff" | repacolor display
 
 ### `pick`
 
-Executes color picker (`xcolor`) and displays the picked color.
+Executes color picker and displays the picked color.
 
 ```
+$ repacolor pick
+```
+
+The integrated color picker works under _X11/linux_ if installed with *xextras*. If you want to use an external color picker, set the `COLORPICKER` environment variable:
+
+```
+$ export COLORPICKER=xcolor
 $ repacolor pick
 ```
 

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "repacolors"
-version = "0.6.0"
+version = "0.7.0"
 description = "Small library for color conversion, manipulation, etc."
 authors = ["Gyuri Horak <dyuri@horak.hu>"]
 repository = "https://github.com/dyuri/repacolors"
@@ -22,7 +22,7 @@ click = "^7.0"
 xcffib = { version = "^0.9.0", optional = true }
 
 [tool.poetry.extras]
-xresources = ["xcffib"]
+xextras = ["xcffib"]
 
 [tool.poetry.dev-dependencies]
 tox = "^3.14.3"
