@@ -86,7 +86,8 @@ def colorwheel(name):
 @color.command()
 @click.option("--format", default="display", help="Color format to show.")
 @click.option("-n", "--number", "number", default=1, help="Number of colors to pick.")
-def pick(format, number):
+@click.option("-c", "--copy", "copy", default=False, is_flag=True, help="Copy to clipboard (using `xsel`)")
+def pick(format, number, copy):
     """Pick colors from your desktop."""
     # TODO copy to clipboard
     # TODO draw color wheel
@@ -107,6 +108,15 @@ def pick(format, number):
 
     for c in colors:
         c.print(format)
+
+    if copy:
+        try:
+            proc = subprocess.Popen(["xsel", "-p"], stdin=subprocess.PIPE)  # nosec
+            proc.stdin.write(c.lhex.encode())
+            proc.stdin.close()
+            proc.wait()
+        except subprocess.SubProcessError:
+            pass
 
 
 @color.command()
