@@ -647,17 +647,52 @@ class Color(terminal.TerminalColor):
         """matplotlib color tuple"""
         return self.rgb + (self.alpha,)
 
-    def contrast_ratio(self, other: "Color") -> float:
+    def contrast_ratio(self, other: "Color", property: str = "cie_y") -> float:
         """WCAG relative contrast ratio
+
+        property: cie_y or luminance should work
 
         contrast_ratio > 4.5:1 - AA
         contrast_ratio > 7:1 - AAA
         """
-        l1, l2 = self.luminance, other.luminance
+        l1, l2 = getattr(self, property), getattr(other, property)
         if l2 > l1:
             l1, l2 = l2, l1
 
         return (l1 + 0.05) / (l2 + 0.05)
+
+    def adjust_contrast(self, other: "Color", limit: float = 4.5, epsilon: Optional[float] = None) -> Tuple["Color", "Color"]:
+        # adjust contrast of the given colors to fulfill WCAG requirements
+        # increases/decreases HSL lightness only
+        # first tries to adjust the main color, if the other is too close then changes that too
+        if self.contrast_ratio(other) >= limit:
+            return (self, other)
+
+        if epsilon is None:
+            epsilon = limit / 1000
+
+        lighter = self.cie_y > other.cie_y
+
+        c1 = self
+        c2 = other
+        cr = c1.contrast_ratio(c2)
+        if lighter:
+            increment = epsilon
+        else:
+            increment = -epsilon
+
+        # try to adjust c1
+        while cr < limit and c1.lightness < .999 and c1.lightness > .001:
+            c1 = c1.set(lightness = c1.lightness + increment)
+            cr = c1.contrast_ratio(c2)
+
+        if cr < limit:
+            # c1 was not enough try to adjust c2 too
+            while cr < limit and c2.lightness < .999 and c2.lightness > .001:
+                c2 = c2.set(lightness = c2.lightness - increment)
+                cr = c1.contrast_ratio(c2)
+
+        return (c1, c2)
 
     def __str__(self):
         return self.hex
