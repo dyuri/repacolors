@@ -64,6 +64,51 @@ def display(colordef, format):
 
 
 @color.command()
+@click.argument("colordef", nargs=-1)
+@click.option("--contrast", default=4.5, help="Required contrast")
+@click.option("--format", default="display", help="Color format to show.")
+@click.option("-v", "--verbose", "verbose", default=False, is_flag=True, help="Print verbose output.")
+def adjust_contrast(colordef, contrast, format, verbose):
+    """Adjust the colors to match required contrast ratio."""
+    # check stdin for more colors
+    if len(colordef) < 2 and not sys.stdin.isatty():
+        stdincolors = from_stdin()
+        colordef = (list(colordef) + list(stdincolors))[:2]
+
+    if len(colordef) == 0:
+        click.echo("At least one color definition required!")
+        sys.exit(1)
+
+    c1 = repacolors.Color(colordef[0])
+    # still not enough colors, fall back to black/white
+    if len(colordef) < 2:
+        # using #757575 as middle point
+        c2 = repacolors.Color("#fff") if c1.luminance < .178 else repacolors.Color("#000")
+    else:
+        c2 = repacolors.Color(colordef[1])
+
+    adjc1, adjc2 = c1.adjust_contrast(c2, contrast)
+
+    if not verbose or not sys.stdout.isatty():
+        adjc1.print(format)
+        adjc2.print(format)
+
+    else:
+        if c1 == adjc1 and c2 == adjc2:
+            print(f"Contrast was already OK! ({c1.contrast_ratio(c2)} > {contrast})")
+            print(f"{adjc2.termfg}{adjc1.termbg}  {adjc1.lhex}  ")
+            print(f"{adjc1.termfg}{adjc2.termbg}  {adjc2.lhex}  ")
+        else:
+            print(f"Colors adjusted. ({c1.contrast_ratio(c2):.4f} => {adjc1.contrast_ratio(adjc2):.4f})")
+            print(f"{c2.termfg}{c1.termbg}  {c2.lhex}  {c2.termreset} => {adjc2.termfg}{adjc1.termbg}  {adjc1.lhex}  ")
+            print(f"{c1.termfg}{c2.termbg}  {c1.lhex}  {c1.termreset} => {adjc1.termfg}{adjc2.termbg}  {adjc2.lhex}  ")
+
+        print(c1.termreset)
+        adjc1.print(format)
+        adjc2.print(format)
+
+
+@color.command()
 @click.argument("name", nargs=-1)
 def colorwheel(name):
     """Display colorwheel defined by `name` or created by the colors provided via stdin."""
