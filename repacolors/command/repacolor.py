@@ -100,8 +100,8 @@ def adjust_contrast(colordef, contrast, format, verbose):
             print(f"{adjc1.termfg}{adjc2.termbg}  {adjc2.lhex}  ")
         else:
             print(f"Colors adjusted. ({c1.contrast_ratio(c2):.4f} => {adjc1.contrast_ratio(adjc2):.4f})")
-            print(f"{c2.termfg}{c1.termbg}  {c2.lhex}  {c2.termreset} => {adjc2.termfg}{adjc1.termbg}  {adjc1.lhex}  ")
-            print(f"{c1.termfg}{c2.termbg}  {c1.lhex}  {c1.termreset} => {adjc1.termfg}{adjc2.termbg}  {adjc2.lhex}  ")
+            print(f"{c2.termfg}{c1.termbg}  {c1.lhex}  {c2.termreset} => {adjc2.termfg}{adjc1.termbg}  {adjc1.lhex}  ")
+            print(f"{c1.termfg}{c2.termbg}  {c2.lhex}  {c1.termreset} => {adjc1.termfg}{adjc2.termbg}  {adjc2.lhex}  ")
 
         print(c1.termreset)
         adjc1.print(format)
