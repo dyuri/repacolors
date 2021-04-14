@@ -1,6 +1,11 @@
 from repacolors import Color, colors, convert, ops
 import pytest
 import io
+import random
+
+
+def about_the_same(x, y, epsilon=0.001):
+    return x - epsilon < y < x + epsilon
 
 
 def test_create_from_colortuple():
@@ -430,8 +435,19 @@ def test_gray():
 
 
 def test_contrast_ratio():
-    assert Color("black").contrast_ratio(Color("white")) == 21
-    assert Color("black").contrast_ratio(Color("black")) == 1
+    assert about_the_same(Color("black").contrast_ratio(Color("white")), 21)
+    assert about_the_same(Color("black").contrast_ratio(Color("black")), 1)
+
+
+def test_adjust_contrast():
+    for _ in range(10):
+        r1, r2, g1, g2, b1, b2 = (random.random() for _ in range(6))
+        c1 = Color(red=r1, green=g1, blue=b1)
+        c2 = Color(red=r2, green=g2, blue=b2)
+
+        ac1, ac2 = c1.adjust_contrast(c2)
+
+        assert ac1.contrast_ratio(ac2) >= 4.5
 
 
 def test_color_add():
