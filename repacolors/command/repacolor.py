@@ -108,6 +108,18 @@ def adjust_contrast(colordef, contrast, format, verbose):
         adjc2.print(format)
 
 
+def get_cwheel(name):
+    name = name.lower()
+    if name in ["rgb", "hsl"]:
+        cwheel = repacolors.schemes.RGB
+    elif name in ["lab", "lch"]:
+        cwheel = repacolors.schemes.LAB
+    else:
+        cwheel = repacolors.schemes.RYB
+
+    return cwheel
+
+
 @color.command()
 @click.argument("name", nargs=-1)
 def colorwheel(name):
@@ -117,13 +129,8 @@ def colorwheel(name):
         cscale = repacolors.ColorScale(colors)
         cwheel = repacolors.ColorWheel(cscale)
     else:
-        n = name[0].lower()
-        if n in ["rgb", "hsl"]:
-            cwheel = repacolors.schemes.RGB
-        elif n in ["lab", "lch"]:
-            cwheel = repacolors.schemes.LAB
-        else:
-            cwheel = repacolors.schemes.RYB
+        n = name[0]
+        cwheel = get_cwheel(n)
 
     cwheel.print()
 
@@ -132,13 +139,18 @@ def colorwheel(name):
 @click.option("--format", default="display", help="Color format to show.")
 @click.option("-n", "--number", "number", default=1, help="Number of colors to pick.")
 @click.option("-c", "--copy", "copy", default=False, is_flag=True, help="Copy to clipboard (using `xsel`)")
-def pick(format, number, copy):
+@click.option("-s", "--scheme", "scheme", default=None, help="Draws color wheel of the given scheme.")
+def pick(format, number, copy, scheme):
     """Pick colors from your desktop."""
-    # TODO copy to clipboard
-    # TODO draw color wheel
+    # TODO proper copy to clipboard
 
     colorpicker = os.environ.get("COLORPICKER")
     colors = []
+
+    # draw color wheel if requested
+    if scheme:
+        cwheel = get_cwheel(scheme)
+        cwheel.print()
 
     # if color picker is not set, try to use integrated one
     if not colorpicker:

@@ -172,24 +172,30 @@ class ColorWheel:
 
         if bgcolors is None:
             bgcolors = getattr(
-                self, "bgcolors", [Color(LabTuple(35, 0, 0)), Color(LabTuple(5, 0, 0))]
+                self, "bgcolors", [Color("#000")]
             )
 
         bgl = len(bgcolors)
+        white = Color("#fff")
+        black = Color("#000")
 
         for y in range(w):
             line = []
             for x in range(w):
                 bgc = bgcolors[(y + x) % bgl]
-                ro, ri = width / 2, width / 3
+                ro, ri1, ri2 = width / 2, width / 3, 2 * width / 5
                 rx, ry = w / 2 - x, w / 2 - y
                 r = (rx ** 2 + ry ** 2) ** .5
                 if r < ro:
                     alpha = math.atan2(ry, rx)
                     pos = 12 * alpha / math.tau - 3
                     alpha = 1
-                    if r < ri:
-                        alpha = 1 - (ri - r) / ri
+                    if r < ri1:
+                        alpha = 1 - (ri1 - r) / ri1
+                        bgc = white
+                    elif r > ri2:
+                        alpha = 1 - (r - ri2) / (ro - ri2)
+                        bgc = black
                     line.append(blend(self[pos].set(alpha=alpha), bgc))
                 else:
                     line.append(bgc)

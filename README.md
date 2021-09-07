@@ -70,6 +70,8 @@ $ export COLORPICKER=xcolor
 $ repacolor pick
 ```
 
+If a color scheme is provided via the `-s` option, a color wheel for that scheme is drawn to pick a color from.
+
 ### `palette`
 
 Display the colors of the palette. If no palette name provided, it shows the palettes available.
@@ -119,7 +121,7 @@ $ repacolor scale red white black red | repacolor colorwheel
 
 Adjust the colors to match required contrast ratio.
 
-If only one color is provided, chooses black or white based on the colors luminance.
+If only one color is provided, chooses black or white based on the color's luminance.
 
 If two colors are provided, tries to lighten/darken them to fulfill the contrast requirement. Starts to adjust the first color, then if it's not enough continues with the other.
 
