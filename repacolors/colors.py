@@ -3,6 +3,7 @@ import os
 import sys
 import math
 import re
+import hashlib
 from itertools import zip_longest
 from typing import Dict, Any, Optional, Callable, Iterator, List, Union, Tuple
 from . import convert
@@ -379,11 +380,7 @@ class Color(terminal.TerminalColor):
                 else:
                     return RGBTuple(*tuple(abs(o) for o in obj))
 
-        # use the hash
-        try:
-            hsh = hash(obj)
-        except TypeError:
-            hsh = hash(str(obj))
+        hsh = int(hashlib.md5(str(obj).encode("utf-8")).hexdigest(), 16)
 
         r = hsh % 1e3
         g = int(hsh / 1e3) % 1e3
