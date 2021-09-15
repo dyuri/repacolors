@@ -15,3 +15,5 @@
 
 - cmd line tool
   - cubehelix w/ parameters
+
+- CIE XYZ internal?
